@@ -44,21 +44,24 @@
 		}],
 	"materials": [
 		{
-			"uuid": "AC42566F-38C9-4473-B9C1-D04EAC34DEFA",
+			"uuid": "7F604573-1450-4F55-9100-C285D266C3B8",
 			"type": "MeshPhongMaterial",
-			"name": "Tree",
 			"color": 16777215,
-			"emissive": 0,
+			"emissive": 921102,
+			"specular": 5658189,
+			"shininess": 3.26,
+			"blending": 0,
+			"shading": 0,
 			"vertexColors": 2
 		}],
 	"object": {
-		"uuid": "28C6F0C2-2469-46E6-ADF8-3674CB4B5060",
+		"uuid": "4D1CC68A-237C-4B9F-9B4C-D6A8D8F26A78",
 		"type": "Mesh",
 		"name": "Tree",
 		"castShadow": true,
 		"receiveShadow": true,
-		"matrix": [1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1],
+		"matrix": [0.17881715297698975,-0.006122930441051722,0,0,0.006122930441051722,0.17881715297698975,0,0,0,0,0.17892195284366608,0,-0.0003947759105358273,0,0,1],
 		"geometry": "EE7C52F7-6B13-404F-AC28-D220F1E6E193",
-		"material": "AC42566F-38C9-4473-B9C1-D04EAC34DEFA"
+		"material": "7F604573-1450-4F55-9100-C285D266C3B8"
 	}
 }

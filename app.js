@@ -1,21 +1,23 @@
-require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
 require( './node_modules\/three\/src\/loaders\/ObjectLoader' );
 
 import ImprovedNoise from './include/ImprovedNoise';
 
 ( function () {
 
-  const SHADOW_MAP_WIDTH = 512;
-  const SHADOW_MAP_HEIGHT = 512;
-  const SHADOW_CAM_SIZE = 256;
+  const SHADOW_MAP_WIDTH = 1024;
+  const SHADOW_MAP_HEIGHT = 1024;
+  const SHADOW_CAM_SIZE = 512;
   const NUM_TREES = 10000;
+  const TREE_SPREAD = 500;
+
+  const FOG_MOD_SPEED = 0.1;
 
   let camera,
     renderer,
-    cameraControls,
     scene,
     objectLoader,
     shadowCam,
+    cameraAnchor,
     clock;
 
   let meshes = [];
@@ -23,11 +25,14 @@ import ImprovedNoise from './include/ImprovedNoise';
   let startPosCam;
   let startPosLight;
 
+  // Terrain stuff
+  let noise = new ImprovedNoise();
+
   // Directional light
   let sun;
   let shadowAnchor;
 
-  let groundMaterial = new THREE.MeshPhongMaterial( { color: 0x1E2A00 } );
+  let groundMaterial = new THREE.MeshPhongMaterial( { color: 0x2E3A00 } );
 
   /**
    * Gets the device pixel ratio.
@@ -85,6 +90,15 @@ import ImprovedNoise from './include/ImprovedNoise';
 
     let time = clock.getElapsedTime();
 
+    // Fog modulation based on camera pos for fake cloud effect
+    let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
+      Math.abs( cameraAnchor.position.y / 50 ),
+      Math.abs( cameraAnchor.position.z / 50 ) );
+    scene.fog.density = ( fog + 0.5 ) * 0.001 + 0.00025;
+
+    cameraAnchor.position.x += dt * 15;
+    shadowAnchor.position.x = Math.round( cameraAnchor.position.x );
+
     requestAnimationFrame( idle );
     render();
   };
@@ -93,11 +107,14 @@ import ImprovedNoise from './include/ImprovedNoise';
     for ( let i = 0; i < NUM_TREES; ++i ) {
       let mesh = meshes[ 0 ].clone();
       let angle = getRandomArbitrary( 0, 2 * Math.PI );
-      let dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * 500;
-      let width = getRandomArbitrary( 0.5, 0.8 );
-      mesh.position.x = Math.sin( angle ) * dist;
-      mesh.position.z = Math.cos( angle ) * dist;
-      mesh.scale.set( width, getRandomArbitrary( 0.85, 1 ), width );
+      let dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_SPREAD;
+      let width = getRandomArbitrary( 0.25, 0.5 );
+      let posX = Math.sin( angle ) * dist;
+      let posY = Math.cos( angle ) * dist;
+      mesh.position.x = posX;
+      mesh.position.z = posY;
+      let noiseScale = noise.noise( posX / 100 + TREE_SPREAD * 2, posY / 100 + TREE_SPREAD * 2, 0 ) + 0.5;
+      mesh.scale.set( width, noiseScale + 0.5, width );
       let sway = 0.05;
       mesh.rotation.set(
         getRandomArbitrary( -sway, sway ),
@@ -137,10 +154,6 @@ import ImprovedNoise from './include/ImprovedNoise';
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2( 0xE9EEFF, 0.0025 );
 
-    // Camera
-    camera = new THREE.PerspectiveCamera( 40.0, window.innerWidth / window.innerHeight, 1, 1000 );
-    scene.add( camera );
-
     // Loading managers
     objectLoader = new THREE.ObjectLoader();
 
@@ -152,16 +165,17 @@ import ImprovedNoise from './include/ImprovedNoise';
     let axisHelper = new THREE.AxisHelper( 3 );
     scene.add( axisHelper );
 
-    // Camera controls
-    cameraControls = new THREE.OrbitControls( camera, renderer.domElement );
-    cameraControls.target.set( 0, 0, 0 );
-    startPosCam = new THREE.Vector3( 0, 100, 100 );
-    camera.position.set( startPosCam.x, startPosCam.y, startPosCam.z );
-    cameraControls.update();
+    // Camera
+    camera = new THREE.PerspectiveCamera( 15.0, window.innerWidth / window.innerHeight, 1, 1000 );
+    camera.position.set( -250, 500, 500 );
+    camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
+    cameraAnchor = new THREE.Object3D();
+    cameraAnchor.add( camera );
+    scene.add( cameraAnchor );
 
     // Lights
-    sun = new THREE.DirectionalLight( 0xffffff, 1.25 );
-    startPosLight = new THREE.Vector3( 0, 50, 50 );
+    sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
+    startPosLight = new THREE.Vector3( 0, 30, 30 );
     sun.position.set( startPosLight.x, startPosLight.y, startPosLight.z );
     shadowAnchor = new THREE.Object3D();
     shadowAnchor.add( sun.shadow.camera );
@@ -176,17 +190,28 @@ import ImprovedNoise from './include/ImprovedNoise';
     sun.shadow.camera.left = sCamSize;
     sun.shadow.camera.top = sCamSize;
     sun.shadow.camera.bottom = -sCamSize;
-    sun.shadow.camera.far = 250;
-    sun.shadow.bias = -0.005;
+    sun.shadow.camera.far = 512;
+    sun.shadow.camera.near = -512;
+    sun.shadow.bias = -0.0005;
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 
-    let groundPlane = new THREE.Mesh( new THREE.PlaneGeometry( 1000, 1000, 1, 1 ), groundMaterial );
+    // Terrain
+    let landscapeMaterial = new THREE.ShaderMaterial( {
+      vertexShader: require( './include/shaders/landscape_vert.glsl' ),
+      fragmentShader: require( './include/shaders/landscape_frag.glsl' ),
+      defines: {
+        FOO: 15,
+        BAR: true
+      }
+    } );
+    let groundPlane = new THREE.Mesh( new THREE.PlaneGeometry( 1000, 1000, 1, 1 ), landscapeMaterial );
     groundPlane.receiveShadow = true;
     groundPlane.rotation.x = -Math.PI / 2;
     scene.add( groundPlane );
+    console.log( landscapeMaterial );
 
-    scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.75 ) );
+    scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
 
     // Hemi light
