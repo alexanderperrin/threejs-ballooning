@@ -1,0 +1,38 @@
+{
+  "name": "flight",
+  "version": "1.0.0",
+  "description": "Experiment using THREE.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack-dev-server --inline",
+    "build": "webpack --config webpack-production.config.js -p"
+  },
+  "author": "Alexander Perrin",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-core": "^6.10.4",
+    "babel-loader": "^6.2.4",
+    "babel-plugin-transform-class-properties": "^6.10.2",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-react": "^6.5.0",
+    "copy-webpack-plugin": "^3.0.1",
+    "css-loader": "^0.23.1",
+    "exports-loader": "^0.6.3",
+    "file-loader": "^0.9.0",
+    "howler": "^1.1.29",
+    "imports-loader": "^0.6.5",
+    "jquery": "^3.0.0",
+    "jshint": "^2.9.2",
+    "jshint-loader": "^0.8.3",
+    "json-loader": "^0.5.4",
+    "node-libs-browser": "^1.0.0",
+    "strip-loader": "^0.1.2",
+    "style-loader": "^0.13.1",
+    "three": "^0.78.0",
+    "underscore": "^1.8.3",
+    "webpack": "^1.13.1",
+    "webpack-dev-server": "^1.14.1",
+    "webpack-glsl-loader": "^1.0.1"
+  }
+}
