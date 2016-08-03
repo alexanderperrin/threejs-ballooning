@@ -7,7 +7,7 @@ import ImprovedNoise from './include/ImprovedNoise';
   const SHADOW_MAP_WIDTH = 1024;
   const SHADOW_MAP_HEIGHT = 1024;
   const SHADOW_CAM_SIZE = 512;
-  const NUM_TREES = 10000;
+  const NUM_TREES = 10;
   const TREE_SPREAD = 500;
 
   const FOG_MOD_SPEED = 0.1;
@@ -20,7 +20,7 @@ import ImprovedNoise from './include/ImprovedNoise';
     cameraAnchor,
     clock;
 
-  let meshes = [];
+  let meshStore = {};
 
   let startPosCam;
   let startPosLight;
@@ -104,31 +104,72 @@ import ImprovedNoise from './include/ImprovedNoise';
   };
 
   let spawnTrees = function () {
+
+    let mesh = meshStore[ 'Tree' ].clone();
+    let meshGeo = mesh.geometry;
+    let vertCount = meshGeo.attributes.position.count;
+
+    // Tree patch geometry
+    let treePatchGeo = new THREE.BufferGeometry();
+
+    // Geometry attributes
+    let colorAttrib = new THREE.Float32Attribute(
+      new Float32Array( vertCount * meshGeo.attributes.color.itemSize * NUM_TREES ),
+      meshGeo.attributes.color.itemSize ).setDynamic( true );
+    let posAttrib = new THREE.Float32Attribute(
+      new Float32Array( vertCount * meshGeo.attributes.position.itemSize * NUM_TREES ),
+      meshGeo.attributes.position.itemSize ).setDynamic( true );
+    treePatchGeo.addAttribute( 'color', colorAttrib );
+    treePatchGeo.addAttribute( 'position', posAttrib );
+
+    let matrix = new THREE.Matrix4();
+    let position = new THREE.Vector3();
+    let rotation = new THREE.Quaternion();
+    let scale = new THREE.Vector3();
     for ( let i = 0; i < NUM_TREES; ++i ) {
-      let mesh = meshes[ 0 ].clone();
+      rotation.setFromEuler( new THREE.Euler( 0, 0, 0 ) );
+      scale.set( 1, 1, 1 );
+      position.set( getRandomArbitrary( -10, 10 ), 0, 0 );
+      matrix.compose( position, rotation, scale );
+      meshGeo.applyMatrix( matrix );
+      treePatchGeo.merge( meshGeo, i * vertCount );
+    }
+
+    scene.add( new THREE.Mesh( treePatchGeo, mesh.material ) );
+
+    return;
+
+    // geo.addAttribute('position', new THREE.BufferAttribute())
+    for ( let i = 0; i < NUM_TREES; ++i ) {
+
       let angle = getRandomArbitrary( 0, 2 * Math.PI );
       let dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_SPREAD;
       let width = getRandomArbitrary( 0.25, 0.5 );
       let posX = Math.sin( angle ) * dist;
       let posY = Math.cos( angle ) * dist;
-      mesh.position.x = posX;
-      mesh.position.z = posY;
-      let noiseScale = noise.noise( posX / 100 + TREE_SPREAD * 2, posY / 100 + TREE_SPREAD * 2, 0 ) + 0.5;
-      mesh.scale.set( width, noiseScale + 0.5, width );
       let sway = 0.05;
-      mesh.rotation.set(
+      let noiseScale = noise.noise( posX / 100 + TREE_SPREAD * 2, posY / 100 + TREE_SPREAD * 2, 0 ) + 0.5;
+
+      let obj = new THREE.Object3D();
+      obj.position.x = posX;
+      obj.position.z = posY;
+      obj.scale.set( width, noiseScale + 0.5, width );
+      obj.rotation.set(
         getRandomArbitrary( -sway, sway ),
         getRandomArbitrary( 0, Math.PI * 2 ),
         getRandomArbitrary( -sway, sway )
       );
-      scene.add( mesh );
+      obj.updateMatrix();
+      mesh.geometry.applyMatrix( obj.matrix );
     }
+    scene.add( new THREE.Mesh( treePatchGeo, mesh.material ) );
   };
 
   let loadMeshes = function () {
 
     objectLoader.load( '/static/meshes/tree.json', ( obj ) => {
-      meshes.push( obj );
+      let name = obj.name;
+      meshStore[ name ] = obj;
       spawnTrees();
     } );
 
@@ -205,7 +246,7 @@ import ImprovedNoise from './include/ImprovedNoise';
         BAR: true
       }
     } );
-    let groundPlane = new THREE.Mesh( new THREE.PlaneGeometry( 1000, 1000, 1, 1 ), landscapeMaterial );
+    let groundPlane = new THREE.Mesh( new THREE.PlaneGeometry( 1000, 1000, 1, 1 ), groundMaterial );
     groundPlane.receiveShadow = true;
     groundPlane.rotation.x = -Math.PI / 2;
     scene.add( groundPlane );
