@@ -6,7 +6,7 @@ import ImprovedNoise from './include/ImprovedNoise';
 
   const SHADOW_MAP_WIDTH = 1024;
   const SHADOW_MAP_HEIGHT = 1024;
-  const SHADOW_CAM_SIZE = 512;
+  const SHADOW_CAM_SIZE = 256;
   const NUM_TREES = 256;
   const TREE_PATCH_SIZE = 64;
   const TREE_PATCH_COUNT = 16;
@@ -30,6 +30,8 @@ import ImprovedNoise from './include/ImprovedNoise';
 
   let startPosCam;
   let startPosLight;
+
+  let plane;
 
   // Terrain stuff
   let noise = new ImprovedNoise();
@@ -117,6 +119,10 @@ import ImprovedNoise from './include/ImprovedNoise';
     let index = Math.round( cameraAnchor.position.x / LANDSCAPE_HEIGHT * 2 );
     indexAxis.position.x = index * LANDSCAPE_HEIGHT / 2;
 
+    if ( plane ) {
+      plane.position.set( cameraAnchor.position.x - 256, cameraAnchor.position.y + 250, cameraAnchor.position.z + 256 );
+    }
+
     groundPlane.position.x = index * LANDSCAPE_HEIGHT / 2;
 
     cameraAnchor.position.x += dt * 64;
@@ -198,6 +204,11 @@ import ImprovedNoise from './include/ImprovedNoise';
       let name = obj.name;
       meshStore[ name ] = obj;
       spawnTrees();
+    } );
+
+    objectLoader.load( '/static/meshes/plane.json', ( obj ) => {
+      plane = obj;
+      scene.add( plane );
     } );
 
   };
