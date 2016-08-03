@@ -7,8 +7,12 @@ import ImprovedNoise from './include/ImprovedNoise';
   const SHADOW_MAP_WIDTH = 1024;
   const SHADOW_MAP_HEIGHT = 1024;
   const SHADOW_CAM_SIZE = 512;
-  const NUM_TREES = 10;
-  const TREE_SPREAD = 500;
+  const NUM_TREES = 256;
+  const TREE_PATCH_SIZE = 64;
+  const TREE_PATCH_COUNT = 16;
+  const TREES_PER_PATCH = 32;
+  const LANDSCAPE_WIDTH = 512;
+  const LANDSCAPE_HEIGHT = 512;
 
   const FOG_MOD_SPEED = 0.1;
 
@@ -19,6 +23,8 @@ import ImprovedNoise from './include/ImprovedNoise';
     shadowCam,
     cameraAnchor,
     clock;
+
+  let indexAxis = new THREE.AxisHelper( LANDSCAPE_HEIGHT );
 
   let meshStore = {};
 
@@ -32,7 +38,11 @@ import ImprovedNoise from './include/ImprovedNoise';
   let sun;
   let shadowAnchor;
 
+  let groundPlane;
   let groundMaterial = new THREE.MeshPhongMaterial( { color: 0x2E3A00 } );
+
+  // Terrain step index
+  let index = 0;
 
   /**
    * Gets the device pixel ratio.
@@ -80,6 +90,14 @@ import ImprovedNoise from './include/ImprovedNoise';
     camera.updateProjectionMatrix();
   };
 
+  let getRandomPositionOnLandscape = function () {
+    return {
+      x: getRandomArbitrary( 0, LANDSCAPE_WIDTH ),
+      y: 0,
+      z: getRandomArbitrary( 0, LANDSCAPE_HEIGHT )
+    };
+  };
+
   let render = function () {
     renderer.render( scene, camera );
   };
@@ -96,8 +114,13 @@ import ImprovedNoise from './include/ImprovedNoise';
       Math.abs( cameraAnchor.position.z / 50 ) );
     scene.fog.density = ( fog + 0.5 ) * 0.001 + 0.00025;
 
-    cameraAnchor.position.x += dt * 15;
-    shadowAnchor.position.x = Math.round( cameraAnchor.position.x );
+    let index = Math.round( cameraAnchor.position.x / LANDSCAPE_HEIGHT * 2 );
+    indexAxis.position.x = index * LANDSCAPE_HEIGHT / 2;
+
+    groundPlane.position.x = index * LANDSCAPE_HEIGHT / 2;
+
+    cameraAnchor.position.x += dt * 64;
+    shadowAnchor.position.x = Math.round( cameraAnchor.position.x / 256 ) * 256;
 
     requestAnimationFrame( idle );
     render();
@@ -109,60 +132,64 @@ import ImprovedNoise from './include/ImprovedNoise';
     let meshGeo = mesh.geometry;
     let vertCount = meshGeo.attributes.position.count;
 
-    // Tree patch geometry
-    let treePatchGeo = new THREE.BufferGeometry();
+    let m = new THREE.Matrix4();
+    let q = new THREE.Quaternion();
+    let p = new THREE.Vector3();
+    let s = new THREE.Vector3();
 
-    // Geometry attributes
-    let colorAttrib = new THREE.Float32Attribute(
-      new Float32Array( vertCount * meshGeo.attributes.color.itemSize * NUM_TREES ),
-      meshGeo.attributes.color.itemSize ).setDynamic( true );
-    let posAttrib = new THREE.Float32Attribute(
-      new Float32Array( vertCount * meshGeo.attributes.position.itemSize * NUM_TREES ),
-      meshGeo.attributes.position.itemSize ).setDynamic( true );
-    treePatchGeo.addAttribute( 'color', colorAttrib );
-    treePatchGeo.addAttribute( 'position', posAttrib );
+    for ( let j = 0; j < TREE_PATCH_COUNT; ++j ) {
 
-    let matrix = new THREE.Matrix4();
-    let position = new THREE.Vector3();
-    let rotation = new THREE.Quaternion();
-    let scale = new THREE.Vector3();
-    for ( let i = 0; i < NUM_TREES; ++i ) {
-      rotation.setFromEuler( new THREE.Euler( 0, 0, 0 ) );
-      scale.set( 1, 1, 1 );
-      position.set( getRandomArbitrary( -10, 10 ), 0, 0 );
-      matrix.compose( position, rotation, scale );
-      meshGeo.applyMatrix( matrix );
-      treePatchGeo.merge( meshGeo, i * vertCount );
-    }
+      let patchPos = getRandomPositionOnLandscape();
 
-    scene.add( new THREE.Mesh( treePatchGeo, mesh.material ) );
-
-    return;
-
-    // geo.addAttribute('position', new THREE.BufferAttribute())
-    for ( let i = 0; i < NUM_TREES; ++i ) {
-
-      let angle = getRandomArbitrary( 0, 2 * Math.PI );
-      let dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_SPREAD;
-      let width = getRandomArbitrary( 0.25, 0.5 );
-      let posX = Math.sin( angle ) * dist;
-      let posY = Math.cos( angle ) * dist;
-      let sway = 0.05;
-      let noiseScale = noise.noise( posX / 100 + TREE_SPREAD * 2, posY / 100 + TREE_SPREAD * 2, 0 ) + 0.5;
-
-      let obj = new THREE.Object3D();
-      obj.position.x = posX;
-      obj.position.z = posY;
-      obj.scale.set( width, noiseScale + 0.5, width );
-      obj.rotation.set(
-        getRandomArbitrary( -sway, sway ),
-        getRandomArbitrary( 0, Math.PI * 2 ),
-        getRandomArbitrary( -sway, sway )
+      // Tree patch geometry
+      let treePatchGeo = new THREE.BufferGeometry();
+      // Geometry attributes
+      let colorAttrib = new THREE.Float32Attribute(
+        new Float32Array( vertCount * meshGeo.attributes.color.itemSize * NUM_TREES ),
+        meshGeo.attributes.color.itemSize
       );
-      obj.updateMatrix();
-      mesh.geometry.applyMatrix( obj.matrix );
+      let posAttrib = new THREE.Float32Attribute(
+        new Float32Array( vertCount * meshGeo.attributes.position.itemSize * NUM_TREES ),
+        meshGeo.attributes.position.itemSize
+      );
+      let normAttrib = new THREE.Float32Attribute(
+        new Float32Array( vertCount * meshGeo.attributes.position.itemSize * NUM_TREES ),
+        meshGeo.attributes.position.itemSize
+      );
+      treePatchGeo.addAttribute( 'color', colorAttrib );
+      treePatchGeo.addAttribute( 'position', posAttrib );
+      treePatchGeo.addAttribute( 'normal', normAttrib );
+
+      for ( let i = 0; i < TREES_PER_PATCH; ++i ) {
+
+        let angle = getRandomArbitrary( 0, 2 * Math.PI );
+        let dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
+        let width = getRandomArbitrary( 0.5, 1 );
+        let posX = Math.sin( angle ) * dist;
+        let posY = Math.cos( angle ) * dist;
+        let noiseScale = noise.noise( posX / 100 + TREE_PATCH_SIZE * 2 + patchPos.x, posY / 100 + TREE_PATCH_SIZE * 2 + patchPos.z, 0 ) + 0.5;
+        let sway = 0.05;
+        p.set( posX, 0, posY );
+        q.setFromEuler(
+          new THREE.Euler(
+            getRandomArbitrary( -sway, sway ),
+            getRandomArbitrary( 0, Math.PI * 2 ),
+            getRandomArbitrary( -sway, sway ),
+            THREE.Euler.DefaultOrder
+          )
+        );
+        s.set( width, noiseScale + 0.5, width );
+        m.compose( p, q, s );
+        meshGeo.applyMatrix( m );
+        treePatchGeo.merge( meshGeo, i * vertCount );
+        meshGeo.applyMatrix( m.getInverse( m ) );
+      }
+
+      let treePatch = new THREE.Mesh( treePatchGeo, mesh.material );
+      treePatch.position.set( patchPos.x, patchPos.y, patchPos.z );
+      treePatch.castShadow = true;
+      scene.add( treePatch );
     }
-    scene.add( new THREE.Mesh( treePatchGeo, mesh.material ) );
   };
 
   let loadMeshes = function () {
@@ -194,6 +221,7 @@ import ImprovedNoise from './include/ImprovedNoise';
     // Scene
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2( 0xE9EEFF, 0.0025 );
+    scene.add( indexAxis );
 
     // Loading managers
     objectLoader = new THREE.ObjectLoader();
@@ -207,11 +235,13 @@ import ImprovedNoise from './include/ImprovedNoise';
     scene.add( axisHelper );
 
     // Camera
-    camera = new THREE.PerspectiveCamera( 15.0, window.innerWidth / window.innerHeight, 1, 1000 );
-    camera.position.set( -250, 500, 500 );
-    camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
+    camera = new THREE.PerspectiveCamera( 15.0, window.innerWidth / window.innerHeight, 100, 10000 );
     cameraAnchor = new THREE.Object3D();
+    cameraAnchor.position.set( LANDSCAPE_WIDTH / 2, 0, LANDSCAPE_HEIGHT / 2 );
+    cameraAnchor.updateMatrix();
     cameraAnchor.add( camera );
+    camera.position.set( -750, 750, 750 );
+    camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
     scene.add( cameraAnchor );
 
     // Lights
@@ -237,20 +267,11 @@ import ImprovedNoise from './include/ImprovedNoise';
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 
-    // Terrain
-    let landscapeMaterial = new THREE.ShaderMaterial( {
-      vertexShader: require( './include/shaders/landscape_vert.glsl' ),
-      fragmentShader: require( './include/shaders/landscape_frag.glsl' ),
-      defines: {
-        FOO: 15,
-        BAR: true
-      }
-    } );
-    let groundPlane = new THREE.Mesh( new THREE.PlaneGeometry( 1000, 1000, 1, 1 ), groundMaterial );
+    groundPlane = new THREE.Mesh( new THREE.PlaneGeometry( LANDSCAPE_WIDTH, LANDSCAPE_HEIGHT, 1, 1 ), groundMaterial );
+    groundPlane.position.set( LANDSCAPE_WIDTH / 2, 0, LANDSCAPE_HEIGHT / 2 );
     groundPlane.receiveShadow = true;
     groundPlane.rotation.x = -Math.PI / 2;
     scene.add( groundPlane );
-    console.log( landscapeMaterial );
 
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
