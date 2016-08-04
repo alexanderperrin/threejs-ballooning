@@ -4,6 +4,7 @@ require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
 import ImprovedNoise from './include/ImprovedNoise';
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
+import Heightmap from './include/classes/heightmap';
 
 ( function () {
 
@@ -46,7 +47,17 @@ import TerrainPatch from './include/classes/terrain-patch';
   let noise = new ImprovedNoise();
   let groundMaterial = new THREE.MeshPhongMaterial( {
     color: 0x2E3A00,
-    shading: THREE.FlatShading
+    shading: THREE.FlatShading,
+    shininess: 5
+  } );
+  let heightmap = new Heightmap( {
+    noise: noise,
+    noiseOffset: {
+      x: -TERRAIN_OFFSET_X,
+      y: -TERRAIN_OFFSET_Z
+    },
+    height: 50,
+    scale: 100
   } );
 
   // Directional light
@@ -57,9 +68,6 @@ import TerrainPatch from './include/classes/terrain-patch';
   let gameCamera, renderCamera, editorCamera;
 
   let terrainPatches = [];
-
-  // Terrain step index
-  let index = 0;
 
   // Key input
   let input = {
@@ -274,8 +282,8 @@ import TerrainPatch from './include/classes/terrain-patch';
     // Editor camera
     editorCamera = gameCamera.clone();
     cameraControls = new THREE.OrbitControls( editorCamera, renderer.domElement );
-    cameraControls.target.set( 0, 0, 0 );
-    editorCamera.position.set( -250, 450, -250 );
+    cameraControls.target.set( 0, 0, TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT / 2 );
+    editorCamera.position.set( -250, 350, -250 );
     cameraControls.update();
 
     // Main camera is the camera currently being rendered
@@ -315,7 +323,7 @@ import TerrainPatch from './include/classes/terrain-patch';
             0,
             TERRAIN_PATCH_HEIGHT * i + TERRAIN_OFFSET_Z
           ),
-          noise: noise,
+          heightmap: heightmap,
           xIndex: j,
           yIndex: i,
           material: groundMaterial

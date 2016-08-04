@@ -9,7 +9,7 @@ class TerrainPatch extends THREE.Mesh {
     this.height = opts.hasOwnProperty( 'height' ) ? opts.height : 0;
     this.xIndex = opts.hasOwnProperty( 'xIndex' ) ? opts.xIndex : 0;
     this.yIndex = opts.hasOwnProperty( 'yIndex' ) ? opts.yIndex : 0;
-    this.noise = opts.hasOwnProperty( 'noise' ) ? opts.noise : undefined;
+    this.heightmap = opts.hasOwnProperty( 'heightmap' ) ? opts.heightmap : undefined;
     let position = opts.hasOwnProperty( 'position' ) ? opts.position : new THREE.Vector3();
     this.position.set( position.x, position.y, position.z );
     this.material = opts.hasOwnProperty( 'material' ) ? opts.material : undefined;
@@ -25,8 +25,6 @@ class TerrainPatch extends THREE.Mesh {
     let v = 0;
     let stepX = this.width / SEGS_X;
     let stepY = this.height / SEGS_Y;
-    let rStepX = 1 / stepX;
-    let rStepY = 1 / stepY;
     for ( let j = 0; j < vertsY; ++j ) {
       for ( let i = 0; i < vertsX; ++i, v += 3 ) {
         let pos = {
@@ -34,9 +32,10 @@ class TerrainPatch extends THREE.Mesh {
           y: 0,
           z: j * stepY
         };
-        let noise = this.noise.noise( Math.abs( pos.x + this.position.x ) / 100, 0, Math.abs( pos.z + this.position.z ) / 100 ) + 0.5;
-        noise *= Math.pow( noise, 2 );
-        noise *= 20;
+        let noise = this.heightmap.getHeight(
+          pos.x + this.position.x,
+          pos.z + this.position.z
+        );
         pos.y = noise;
         verts[ v ] = pos.x;
         verts[ v + 1 ] = pos.y;
