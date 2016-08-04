@@ -1,5 +1,5 @@
-const SEGS_X = 32;
-const SEGS_Y = 32;
+const SEGS_X = 16;
+const SEGS_Y = 16;
 
 class TerrainPatch extends THREE.Mesh {
   constructor( opts ) {

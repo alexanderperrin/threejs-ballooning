@@ -20,15 +20,15 @@ class Heightmap {
   }
 
   getHeight( x, y ) {
-    let n1 = this.perlinNoise( x, y, 1 );
-    let n2 = this.perlinNoise( 0.1 * x, 2 * y, 1 );
+    let n1 = this.clamp( this.perlinNoise( x, y, 0.5 ) + 0.2, 0, 1 );
+    let n2 = this.perlinNoise( x, y, 2 ) + 0.2;
     let n3 = this.perlinNoise( x, y, 5 );
-    let height = this.lerp( n2, n1, 0.6 );
+    let height = this.lerp( n1, n2, 0.2 );
     height *= this.clamp( Math.pow( height + 0.5, 5 ), 0, 1 );
-    height = this.lerp( height, this.step( height, 6 ), this.perlinNoise( x * 0.2, 0.6, 2 ) );
-    height += n3 * 0.05;
+    height = this.lerp( height, this.step( height, 6 ), this.perlinNoise( x, 0.2, 10 ) );
     height *= 0.3;
     height *= Math.pow( Math.abs( 0.03 * x ), 2 ) + 0.5;
+    height += Math.pow( Math.abs( 0.02 * x ), 2 ) * 0.1;
     return height * 10;
   }
 
@@ -59,4 +59,4 @@ class Heightmap {
   // }
 }
 
-export default Heightmap;
+export default Heightmap;;

@@ -24,7 +24,7 @@ import Heightmap from './include/classes/heightmap';
   const TERRAIN_PATCH_WIDTH = 128;
   const TERRAIN_PATCH_HEIGHT = 128;
   const TERRAIN_PATCHES_X = 4;
-  const TERRAIN_PATCHES_Z = 6;
+  const TERRAIN_PATCHES_Z = 12;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = 0;
 
@@ -292,7 +292,7 @@ import Heightmap from './include/classes/heightmap';
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    sun.position.set( 0, 30, 30 );
+    sun.position.set( 10, 15, 30 );
     shadowAnchor = new THREE.Object3D();
     shadowAnchor.add( sun.shadow.camera );
     scene.add( shadowAnchor );
@@ -316,7 +316,7 @@ import Heightmap from './include/classes/heightmap';
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
       terrainPatches[ i ] = [];
       for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
-        terrainPatches[ i ][ j ] = new TerrainPatch( {
+        let tp = new TerrainPatch( {
           width: TERRAIN_PATCH_WIDTH,
           height: TERRAIN_PATCH_HEIGHT,
           position: new THREE.Vector3(
@@ -329,6 +329,9 @@ import Heightmap from './include/classes/heightmap';
           yIndex: i,
           material: groundMaterial
         } );
+        tp.receiveShadow = true;
+        tp.castShadow = true;
+        terrainPatches[ i ][ j ] = tp;
         scene.add( terrainPatches[ i ][ j ] );
       }
     }
