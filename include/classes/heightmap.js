@@ -10,15 +10,53 @@ class Heightmap {
     this.rScale = 1 / this.scale;
   }
 
-  getHeight( x, y ) {
-    let nx = x + this.noiseOffset.x;
-    let ny = y + this.noiseOffset.y;
-    nx = nx < 0 ? 0 : nx;
-    ny = ny < 0 ? 0 : ny;
-    let noise = ( this.noise.noise( nx * this.rScale, 0, ny * this.rScale ) + 0.5 );
-    noise *= this.height;
-    return noise;
+  lerp( from, to, t ) {
+    return ( 1 - t ) * from + t * to;
   }
+
+  clamp( val, min, max ) {
+    let t = val < min ? min : val;
+    return t > max ? max : t;
+  }
+
+  getHeight( x, y ) {
+    let n1 = this.perlinNoise( x, y, 1 );
+    let n2 = this.perlinNoise( 0.1 * x, 2 * y, 1 );
+    let n3 = this.perlinNoise( x, y, 5 );
+    let height = this.lerp( n2, n1, 0.6 );
+    height *= this.clamp( Math.pow( height + 0.5, 5 ), 0, 1 );
+    height = this.lerp( height, this.step( height, 6 ), this.perlinNoise( x * 0.2, 0.6, 2 ) );
+    height += n3 * 0.05;
+    height *= 0.3;
+    height *= Math.pow( Math.abs( 0.03 * x ), 2 ) + 0.5;
+    return height * 10;
+  }
+
+  perlinNoise( x, y, frequency ) {
+    x += this.noiseOffset.x;
+    y += this.noiseOffset.y;
+    x = x < 0 ? 0 : x;
+    y = y < 0 ? 0 : y;
+    return this.noise.noise( x * this.rScale * frequency, 0, y * this.rScale * frequency ) + 0.5;
+  }
+
+  step( height, steps ) {
+    return Math.floor( height * steps ) / steps;
+  }
+
+  // public static float Noise (float x, float y, float density)
+  // {
+  // 	float height = perlin.Noise(0.75f * x * density, y * density) + 0.5f;
+  // 	float height2 = perlin.Noise(0.1f * x * density, 2f * y * density) + 0.5f;
+  // 	float height3 = perlin.Noise(5f * x * density, 5f * y * density) + 0.5f;
+  // 	height = Mathf.Lerp(height2, height, 0.6f);
+  // 	height *= Mathf.Clamp01(Mathf.Pow(height + 0.5f, 5f));
+  // 	height = Mathf.Lerp(height, StepHeight(height, 6), perlin.Noise(x * density / 5f, 0.6f));
+  // 	height += height3 * 0.05f;
+  // 	height *= 0.3f;
+  // 	height *= Mathf.Pow(Mathf.Abs(0.03f * y), 2) + 0.5f;
+  // 	return height;
+  // }
 }
 
-export default Heightmap;;
+export default Heightmap;

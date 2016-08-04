@@ -200,7 +200,8 @@ import Heightmap from './include/classes/heightmap';
         let tz = patchPos.z + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_Z;
         noiseScale = noise.noise( tx, 0, tz ) + 0.5;
         sway = 0.05;
-        p.set( posX, 0, posZ );
+        let posY = heightmap.getHeight( posX + patchPos.x, posZ + patchPos.z );
+        p.set( posX, posY, posZ );
         q.setFromEuler(
           new THREE.Euler(
             getRandomArbitrary( -sway, sway ),
@@ -228,7 +229,7 @@ import Heightmap from './include/classes/heightmap';
     objectLoader.load( '/static/meshes/tree.json', ( obj ) => {
       let name = obj.name;
       meshStore[ name ] = obj;
-      // spawnTrees();
+      spawnTrees();
     } );
 
     objectLoader.load( '/static/meshes/plane.json', ( obj ) => {
