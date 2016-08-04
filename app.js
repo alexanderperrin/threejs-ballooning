@@ -1,4 +1,5 @@
 require( './node_modules\/three\/src\/loaders\/ObjectLoader' );
+require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
 
 import ImprovedNoise from './include/ImprovedNoise';
 import Player from './include/classes/player';
@@ -14,10 +15,13 @@ import Player from './include/classes/player';
   const TREES_PER_PATCH = 32;
   const LANDSCAPE_WIDTH = 512;
   const LANDSCAPE_HEIGHT = 512;
+  const STEPS = 2;
+  const FLIGHT_SPEED = 64;
 
   let camera,
     renderer,
     scene,
+    cameraControls,
     objectLoader,
     shadowCam,
     cameraAnchor,
@@ -40,8 +44,8 @@ import Player from './include/classes/player';
   let sun;
   let shadowAnchor;
 
-  let editorCamera = new THREE.PerspectiveCamera( 35.0, window.innerWidth / window.innerHeight, 100, 10000 );
-  let mainCamera = editorCamera;
+  let editorCamera;
+  let mainCamera;
 
   // Terrain step index
   let index = 0;
@@ -120,18 +124,9 @@ import Player from './include/classes/player';
       Math.abs( cameraAnchor.position.z / 50 ) );
     scene.fog.density = ( fog + 0.5 ) * 0.001 + 0.00025;
 
-    index = Math.round( cameraAnchor.position.x / LANDSCAPE_HEIGHT * 2 );
-    indexAxis.position.x = index * LANDSCAPE_HEIGHT / 2;
+    index = Math.round( cameraAnchor.position.x / LANDSCAPE_HEIGHT * STEPS );
 
-    groundPlane.position.x = index * LANDSCAPE_HEIGHT / 2;
-
-    cameraAnchor.position.x += dt * 64;
-    shadowAnchor.position.x = Math.round( cameraAnchor.position.x / 256 ) * 256;
-
-    if ( player ) {
-      player.velocity.z += input.x * dt;
-      player.position.z += player.velocity.z * dt;
-    }
+    cameraAnchor.position.x += dt * FLIGHT_SPEED;
 
     requestAnimationFrame( idle );
     render();
@@ -209,11 +204,11 @@ import Player from './include/classes/player';
     objectLoader.load( '/static/meshes/tree.json', ( obj ) => {
       let name = obj.name;
       meshStore[ name ] = obj;
-      spawnTrees();
+      // spawnTrees();
     } );
 
     objectLoader.load( '/static/meshes/plane.json', ( obj ) => {
-      player = new Player(obj.geometry, obj.material);
+      player = new Player( obj.geometry, obj.material );
       scene.add( player );
     } );
 
@@ -244,14 +239,14 @@ import Player from './include/classes/player';
     objectLoader = new THREE.ObjectLoader();
 
     // Grid helper
-    let gridHelper = new THREE.GridHelper( 16, 1, 0x303030, 0x303030 );
+    let gridHelper = new THREE.GridHelper( LANDSCAPE_WIDTH, LANDSCAPE_WIDTH / STEPS, 0x303030, 0x303030 );
     scene.add( gridHelper );
 
     // Origin
     let axisHelper = new THREE.AxisHelper( 3 );
     scene.add( axisHelper );
 
-    // Camera
+    // Game camera
     camera = new THREE.PerspectiveCamera( 35.0, window.innerWidth / window.innerHeight, 100, 10000 );
     cameraAnchor = new THREE.Object3D();
     cameraAnchor.position.set( LANDSCAPE_WIDTH / 2, 0, LANDSCAPE_HEIGHT / 2 );
@@ -260,6 +255,15 @@ import Player from './include/classes/player';
     camera.position.set( -200, 350, 200 );
     camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
     scene.add( cameraAnchor );
+
+    // Editor camera
+    editorCamera = camera.clone();
+    cameraControls = new THREE.OrbitControls( editorCamera, renderer.domElement );
+    cameraControls.target.set( 0, 0, 0 );
+    editorCamera.position.set( 200, 350, 200 );
+    cameraControls.update();
+
+    mainCamera = editorCamera;
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
@@ -304,21 +308,29 @@ import Player from './include/classes/player';
     // Events
     addEvent( window, 'resize', resize );
 
-    addEvent(window, 'keydown', function (e) {
+    addEvent( window, 'keydown', function ( e ) {
       if ( e.keyCode === 39 ) {
         input.x = 1.0;
       } else if ( e.keyCode === 37 ) {
         input.x = -1.0;
+      } else if ( e.keyCode === 32 ) {
+        if ( mainCamera === editorCamera ) {
+          mainCamera = camera;
+          console.log( 'Using game camera.' );
+        } else {
+          mainCamera = editorCamera;
+          console.log( 'Using editor camera.' );
+        }
       }
-    });
+    } );
 
-    addEvent(window, 'keyup', function (e) {
+    addEvent( window, 'keyup', function ( e ) {
       if ( e.keyCode === 39 ) {
         input.x = 0;
       } else if ( e.keyCode === 37 ) {
         input.x = 0;
       }
-    });
+    } );
   };
 
   init();
