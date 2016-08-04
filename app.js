@@ -3,23 +3,34 @@ require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
 
 import ImprovedNoise from './include/ImprovedNoise';
 import Player from './include/classes/player';
+import TerrainPatch from './include/classes/terrain-patch';
 
 ( function () {
 
+  // Rendering
   const SHADOW_MAP_WIDTH = 1024;
   const SHADOW_MAP_HEIGHT = 1024;
   const SHADOW_CAM_SIZE = 256;
+
+  // Trees
   const NUM_TREES = 256;
   const TREE_PATCH_SIZE = 64;
-  const TREE_PATCH_COUNT = 16;
+  const TREE_PATCH_COUNT = 32;
   const TREES_PER_PATCH = 32;
-  const LANDSCAPE_WIDTH = 512;
-  const LANDSCAPE_HEIGHT = 512;
-  const STEPS = 2;
+  const TREE_NOISE_SIZE = 100;
+
+  // Terrain patches
+  const TERRAIN_PATCH_WIDTH = 128;
+  const TERRAIN_PATCH_HEIGHT = 128;
+  const TERRAIN_PATCHES_X = 4;
+  const TERRAIN_PATCHES_Z = 6;
+  const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
+  const TERRAIN_OFFSET_Z = 0;
+
+  // Player
   const FLIGHT_SPEED = 64;
 
-  let camera,
-    renderer,
+  let renderer,
     scene,
     cameraControls,
     objectLoader,
@@ -27,25 +38,25 @@ import Player from './include/classes/player';
     cameraAnchor,
     clock;
 
-  let indexAxis = new THREE.AxisHelper( LANDSCAPE_HEIGHT );
-
   let meshStore = {};
-
-  let startPosLight;
 
   let player;
 
   // Terrain stuff
   let noise = new ImprovedNoise();
-  let groundPlane;
-  let groundMaterial = new THREE.MeshPhongMaterial( { color: 0x2E3A00 } );
+  let groundMaterial = new THREE.MeshPhongMaterial( {
+    color: 0x2E3A00,
+    shading: THREE.FlatShading
+  } );
 
   // Directional light
   let sun;
   let shadowAnchor;
 
-  let editorCamera;
-  let mainCamera;
+  // Cameras
+  let gameCamera, renderCamera, editorCamera;
+
+  let terrainPatches = [];
 
   // Terrain step index
   let index = 0;
@@ -79,6 +90,13 @@ import Player from './include/classes/player';
     }
   };
 
+  let updateRenderCamera = function () {
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    renderCamera.aspect = width / height;
+    renderCamera.updateProjectionMatrix();
+  };
+
   /**
    * Resize function
    * @param  double width
@@ -97,21 +115,19 @@ import Player from './include/classes/player';
     canvas.style.width = width + 'px';
     canvas.style.height = height + 'px';
 
-    // Update camera projection
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
+    updateRenderCamera();
   };
 
   let getRandomPositionOnLandscape = function () {
     return {
-      x: getRandomArbitrary( 0, LANDSCAPE_WIDTH ),
+      x: getRandomArbitrary( 0, TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) + TERRAIN_OFFSET_X,
       y: 0,
-      z: getRandomArbitrary( 0, LANDSCAPE_HEIGHT )
+      z: getRandomArbitrary( 0, TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) + TERRAIN_OFFSET_Z
     };
   };
 
   let render = function () {
-    renderer.render( scene, mainCamera );
+    renderer.render( scene, renderCamera );
   };
 
   let idle = function () {
@@ -123,8 +139,6 @@ import Player from './include/classes/player';
       Math.abs( cameraAnchor.position.y / 50 ),
       Math.abs( cameraAnchor.position.z / 50 ) );
     scene.fog.density = ( fog + 0.5 ) * 0.001 + 0.00025;
-
-    index = Math.round( cameraAnchor.position.x / LANDSCAPE_HEIGHT * STEPS );
 
     cameraAnchor.position.x += dt * FLIGHT_SPEED;
 
@@ -166,17 +180,19 @@ import Player from './include/classes/player';
       treePatchGeo.addAttribute( 'position', posAttrib );
       treePatchGeo.addAttribute( 'normal', normAttrib );
 
-      let angle, dist, width, posX, posY, noiseScale, sway;
+      let angle, dist, width, posX, posZ, noiseScale, sway;
       for ( let i = 0; i < TREES_PER_PATCH; ++i ) {
 
         angle = getRandomArbitrary( 0, 2 * Math.PI );
         dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
         width = getRandomArbitrary( 0.5, 1 );
         posX = Math.sin( angle ) * dist;
-        posY = Math.cos( angle ) * dist;
-        noiseScale = noise.noise( posX / 100 + TREE_PATCH_SIZE * 2 + patchPos.x, posY / 100 + TREE_PATCH_SIZE * 2 + patchPos.z, 0 ) + 0.5;
+        posZ = Math.cos( angle ) * dist;
+        let tx = patchPos.x + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_X;
+        let tz = patchPos.z + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_Z;
+        noiseScale = noise.noise( tx, 0, tz ) + 0.5;
         sway = 0.05;
-        p.set( posX, 0, posY );
+        p.set( posX, 0, posZ );
         q.setFromEuler(
           new THREE.Euler(
             getRandomArbitrary( -sway, sway ),
@@ -233,13 +249,12 @@ import Player from './include/classes/player';
     // Scene
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2( 0xE9EEFF, 0.0025 );
-    scene.add( indexAxis );
 
     // Loading managers
     objectLoader = new THREE.ObjectLoader();
 
     // Grid helper
-    let gridHelper = new THREE.GridHelper( LANDSCAPE_WIDTH, LANDSCAPE_WIDTH / STEPS, 0x303030, 0x303030 );
+    let gridHelper = new THREE.GridHelper( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH, TERRAIN_PATCH_WIDTH, 0x303030, 0x303030 );
     scene.add( gridHelper );
 
     // Origin
@@ -247,28 +262,28 @@ import Player from './include/classes/player';
     scene.add( axisHelper );
 
     // Game camera
-    camera = new THREE.PerspectiveCamera( 35.0, window.innerWidth / window.innerHeight, 100, 10000 );
+    gameCamera = new THREE.PerspectiveCamera( 35.0, window.innerWidth / window.innerHeight, 100, 10000 );
     cameraAnchor = new THREE.Object3D();
-    cameraAnchor.position.set( LANDSCAPE_WIDTH / 2, 0, LANDSCAPE_HEIGHT / 2 );
+    cameraAnchor.position.set( ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2, 0, ( TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) / 2 );
     cameraAnchor.updateMatrix();
-    cameraAnchor.add( camera );
-    camera.position.set( -200, 350, 200 );
-    camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
+    cameraAnchor.add( gameCamera );
+    gameCamera.position.set( -200, 350, 200 );
+    gameCamera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
     scene.add( cameraAnchor );
 
     // Editor camera
-    editorCamera = camera.clone();
+    editorCamera = gameCamera.clone();
     cameraControls = new THREE.OrbitControls( editorCamera, renderer.domElement );
     cameraControls.target.set( 0, 0, 0 );
-    editorCamera.position.set( 200, 350, 200 );
+    editorCamera.position.set( -250, 450, -250 );
     cameraControls.update();
 
-    mainCamera = editorCamera;
+    // Main camera is the camera currently being rendered
+    renderCamera = editorCamera;
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    startPosLight = new THREE.Vector3( 0, 30, 30 );
-    sun.position.set( startPosLight.x, startPosLight.y, startPosLight.z );
+    sun.position.set( 0, 30, 30 );
     shadowAnchor = new THREE.Object3D();
     shadowAnchor.add( sun.shadow.camera );
     scene.add( shadowAnchor );
@@ -288,12 +303,26 @@ import Player from './include/classes/player';
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 
-    // Terrain
-    groundPlane = new THREE.Mesh( new THREE.PlaneGeometry( LANDSCAPE_WIDTH, LANDSCAPE_HEIGHT, 1, 1 ), groundMaterial );
-    groundPlane.position.set( LANDSCAPE_WIDTH / 2, 0, LANDSCAPE_HEIGHT / 2 );
-    groundPlane.receiveShadow = true;
-    groundPlane.rotation.x = -Math.PI / 2;
-    scene.add( groundPlane );
+    // Terrain patches
+    for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
+      terrainPatches[ i ] = [];
+      for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
+        terrainPatches[ i ][ j ] = new TerrainPatch( {
+          width: TERRAIN_PATCH_WIDTH,
+          height: TERRAIN_PATCH_HEIGHT,
+          position: new THREE.Vector3(
+            TERRAIN_PATCH_WIDTH * j + TERRAIN_OFFSET_X,
+            0,
+            TERRAIN_PATCH_HEIGHT * i + TERRAIN_OFFSET_Z
+          ),
+          noise: noise,
+          xIndex: j,
+          yIndex: i,
+          material: groundMaterial
+        } );
+        scene.add( terrainPatches[ i ][ j ] );
+      }
+    }
 
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
@@ -314,11 +343,11 @@ import Player from './include/classes/player';
       } else if ( e.keyCode === 37 ) {
         input.x = -1.0;
       } else if ( e.keyCode === 32 ) {
-        if ( mainCamera === editorCamera ) {
-          mainCamera = camera;
+        if ( renderCamera === editorCamera ) {
+          renderCamera = gameCamera;
           console.log( 'Using game camera.' );
         } else {
-          mainCamera = editorCamera;
+          renderCamera = editorCamera;
           console.log( 'Using editor camera.' );
         }
       }
