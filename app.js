@@ -9,22 +9,21 @@ import Heightmap from './include/classes/heightmap';
 ( function () {
 
   // Rendering
-  const SHADOW_MAP_WIDTH = 1024;
-  const SHADOW_MAP_HEIGHT = 1024;
-  const SHADOW_CAM_SIZE = 256;
+  const SHADOW_MAP_WIDTH = 512;
+  const SHADOW_MAP_HEIGHT = 512;
+  const SHADOW_CAM_SIZE = 512;
 
   // Trees
-  const NUM_TREES = 256;
-  const TREE_PATCH_SIZE = 64;
+  const TREE_PATCH_SIZE = 96;
   const TREE_PATCH_COUNT = 32;
-  const TREES_PER_PATCH = 32;
+  const TREES_PER_PATCH = 64;
   const TREE_NOISE_SIZE = 100;
 
   // Terrain patches
   const TERRAIN_PATCH_WIDTH = 128;
   const TERRAIN_PATCH_HEIGHT = 128;
-  const TERRAIN_PATCHES_X = 4;
-  const TERRAIN_PATCHES_Z = 12;
+  const TERRAIN_PATCHES_X = 8;
+  const TERRAIN_PATCHES_Z = 8;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = 0;
 
@@ -146,7 +145,7 @@ import Heightmap from './include/classes/heightmap';
     let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
       Math.abs( cameraAnchor.position.y / 50 ),
       Math.abs( cameraAnchor.position.z / 50 ) );
-    scene.fog.density = ( fog + 0.5 ) * 0.001 + 0.00025;
+    scene.fog.density = 0.0005; //( fog + 0.5 ) * 0.001 + 0.00025;
 
     cameraAnchor.position.x += dt * FLIGHT_SPEED;
 
@@ -173,15 +172,15 @@ import Heightmap from './include/classes/heightmap';
       let treePatchGeo = new THREE.BufferGeometry();
       // Geometry attributes
       let colorAttrib = new THREE.Float32Attribute(
-        new Float32Array( vertCount * meshGeo.attributes.color.itemSize * NUM_TREES ),
+        new Float32Array( vertCount * meshGeo.attributes.color.itemSize * TREES_PER_PATCH ),
         meshGeo.attributes.color.itemSize
       );
       let posAttrib = new THREE.Float32Attribute(
-        new Float32Array( vertCount * meshGeo.attributes.position.itemSize * NUM_TREES ),
+        new Float32Array( vertCount * meshGeo.attributes.position.itemSize * TREES_PER_PATCH ),
         meshGeo.attributes.position.itemSize
       );
       let normAttrib = new THREE.Float32Attribute(
-        new Float32Array( vertCount * meshGeo.attributes.position.itemSize * NUM_TREES ),
+        new Float32Array( vertCount * meshGeo.attributes.position.itemSize * TREES_PER_PATCH ),
         meshGeo.attributes.position.itemSize
       );
       treePatchGeo.addAttribute( 'color', colorAttrib );
@@ -308,7 +307,7 @@ import Heightmap from './include/classes/heightmap';
     sun.shadow.camera.bottom = -sCamSize - sCamSize / 2;
     sun.shadow.camera.far = 512;
     sun.shadow.camera.near = -512;
-    sun.shadow.bias = -0.0005;
+    sun.shadow.bias = -0.001;
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 

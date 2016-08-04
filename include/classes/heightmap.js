@@ -27,8 +27,8 @@ class Heightmap {
     height *= this.clamp( Math.pow( height + 0.5, 5 ), 0, 1 );
     height = this.lerp( height, this.step( height, 6 ), this.perlinNoise( x, 0.2, 10 ) );
     height *= 0.3;
-    height *= Math.pow( Math.abs( 0.03 * x ), 2 ) + 0.5;
-    height += Math.pow( Math.abs( 0.02 * x ), 2 ) * 0.1;
+    height *= Math.pow( Math.abs( 0.015 * x ), 2 ) + 0.5;
+    height += Math.pow( Math.abs( 0.01 * x ), 2 ) * 0.1;
     return height * 10;
   }
 
@@ -43,20 +43,6 @@ class Heightmap {
   step( height, steps ) {
     return Math.floor( height * steps ) / steps;
   }
-
-  // public static float Noise (float x, float y, float density)
-  // {
-  // 	float height = perlin.Noise(0.75f * x * density, y * density) + 0.5f;
-  // 	float height2 = perlin.Noise(0.1f * x * density, 2f * y * density) + 0.5f;
-  // 	float height3 = perlin.Noise(5f * x * density, 5f * y * density) + 0.5f;
-  // 	height = Mathf.Lerp(height2, height, 0.6f);
-  // 	height *= Mathf.Clamp01(Mathf.Pow(height + 0.5f, 5f));
-  // 	height = Mathf.Lerp(height, StepHeight(height, 6), perlin.Noise(x * density / 5f, 0.6f));
-  // 	height += height3 * 0.05f;
-  // 	height *= 0.3f;
-  // 	height *= Mathf.Pow(Mathf.Abs(0.03f * y), 2) + 0.5f;
-  // 	return height;
-  // }
 }
 
-export default Heightmap;;
+export default Heightmap;
