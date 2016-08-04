@@ -1,6 +1,7 @@
 require( './node_modules\/three\/src\/loaders\/ObjectLoader' );
 
 import ImprovedNoise from './include/ImprovedNoise';
+import Player from './include/classes/player';
 
 ( function () {
 
@@ -14,8 +15,6 @@ import ImprovedNoise from './include/ImprovedNoise';
   const LANDSCAPE_WIDTH = 512;
   const LANDSCAPE_HEIGHT = 512;
 
-  const FOG_MOD_SPEED = 0.1;
-
   let camera,
     renderer,
     scene,
@@ -28,23 +27,30 @@ import ImprovedNoise from './include/ImprovedNoise';
 
   let meshStore = {};
 
-  let startPosCam;
   let startPosLight;
 
-  let plane;
+  let player;
 
   // Terrain stuff
   let noise = new ImprovedNoise();
+  let groundPlane;
+  let groundMaterial = new THREE.MeshPhongMaterial( { color: 0x2E3A00 } );
 
   // Directional light
   let sun;
   let shadowAnchor;
 
-  let groundPlane;
-  let groundMaterial = new THREE.MeshPhongMaterial( { color: 0x2E3A00 } );
+  let editorCamera = new THREE.PerspectiveCamera( 35.0, window.innerWidth / window.innerHeight, 100, 10000 );
+  let mainCamera = editorCamera;
 
   // Terrain step index
   let index = 0;
+
+  // Key input
+  let input = {
+    x: 0,
+    y: 0
+  };
 
   /**
    * Gets the device pixel ratio.
@@ -101,14 +107,12 @@ import ImprovedNoise from './include/ImprovedNoise';
   };
 
   let render = function () {
-    renderer.render( scene, camera );
+    renderer.render( scene, mainCamera );
   };
 
   let idle = function () {
 
     let dt = clock.getDelta();
-
-    let time = clock.getElapsedTime();
 
     // Fog modulation based on camera pos for fake cloud effect
     let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
@@ -116,17 +120,18 @@ import ImprovedNoise from './include/ImprovedNoise';
       Math.abs( cameraAnchor.position.z / 50 ) );
     scene.fog.density = ( fog + 0.5 ) * 0.001 + 0.00025;
 
-    let index = Math.round( cameraAnchor.position.x / LANDSCAPE_HEIGHT * 2 );
+    index = Math.round( cameraAnchor.position.x / LANDSCAPE_HEIGHT * 2 );
     indexAxis.position.x = index * LANDSCAPE_HEIGHT / 2;
-
-    if ( plane ) {
-      plane.position.set( cameraAnchor.position.x - 256, cameraAnchor.position.y + 250, cameraAnchor.position.z + 256 );
-    }
 
     groundPlane.position.x = index * LANDSCAPE_HEIGHT / 2;
 
     cameraAnchor.position.x += dt * 64;
     shadowAnchor.position.x = Math.round( cameraAnchor.position.x / 256 ) * 256;
+
+    if ( player ) {
+      player.velocity.z += input.x * dt;
+      player.position.z += player.velocity.z * dt;
+    }
 
     requestAnimationFrame( idle );
     render();
@@ -166,15 +171,16 @@ import ImprovedNoise from './include/ImprovedNoise';
       treePatchGeo.addAttribute( 'position', posAttrib );
       treePatchGeo.addAttribute( 'normal', normAttrib );
 
+      let angle, dist, width, posX, posY, noiseScale, sway;
       for ( let i = 0; i < TREES_PER_PATCH; ++i ) {
 
-        let angle = getRandomArbitrary( 0, 2 * Math.PI );
-        let dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
-        let width = getRandomArbitrary( 0.5, 1 );
-        let posX = Math.sin( angle ) * dist;
-        let posY = Math.cos( angle ) * dist;
-        let noiseScale = noise.noise( posX / 100 + TREE_PATCH_SIZE * 2 + patchPos.x, posY / 100 + TREE_PATCH_SIZE * 2 + patchPos.z, 0 ) + 0.5;
-        let sway = 0.05;
+        angle = getRandomArbitrary( 0, 2 * Math.PI );
+        dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
+        width = getRandomArbitrary( 0.5, 1 );
+        posX = Math.sin( angle ) * dist;
+        posY = Math.cos( angle ) * dist;
+        noiseScale = noise.noise( posX / 100 + TREE_PATCH_SIZE * 2 + patchPos.x, posY / 100 + TREE_PATCH_SIZE * 2 + patchPos.z, 0 ) + 0.5;
+        sway = 0.05;
         p.set( posX, 0, posY );
         q.setFromEuler(
           new THREE.Euler(
@@ -207,8 +213,8 @@ import ImprovedNoise from './include/ImprovedNoise';
     } );
 
     objectLoader.load( '/static/meshes/plane.json', ( obj ) => {
-      plane = obj;
-      scene.add( plane );
+      player = new Player(obj.geometry, obj.material);
+      scene.add( player );
     } );
 
   };
@@ -246,12 +252,12 @@ import ImprovedNoise from './include/ImprovedNoise';
     scene.add( axisHelper );
 
     // Camera
-    camera = new THREE.PerspectiveCamera( 15.0, window.innerWidth / window.innerHeight, 100, 10000 );
+    camera = new THREE.PerspectiveCamera( 35.0, window.innerWidth / window.innerHeight, 100, 10000 );
     cameraAnchor = new THREE.Object3D();
     cameraAnchor.position.set( LANDSCAPE_WIDTH / 2, 0, LANDSCAPE_HEIGHT / 2 );
     cameraAnchor.updateMatrix();
     cameraAnchor.add( camera );
-    camera.position.set( -750, 750, 750 );
+    camera.position.set( -200, 350, 200 );
     camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
     scene.add( cameraAnchor );
 
@@ -270,14 +276,15 @@ import ImprovedNoise from './include/ImprovedNoise';
     let sCamSize = SHADOW_CAM_SIZE;
     sun.shadow.camera.right = -sCamSize;
     sun.shadow.camera.left = sCamSize;
-    sun.shadow.camera.top = sCamSize;
-    sun.shadow.camera.bottom = -sCamSize;
+    sun.shadow.camera.top = sCamSize - sCamSize / 2;
+    sun.shadow.camera.bottom = -sCamSize - sCamSize / 2;
     sun.shadow.camera.far = 512;
     sun.shadow.camera.near = -512;
     sun.shadow.bias = -0.0005;
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 
+    // Terrain
     groundPlane = new THREE.Mesh( new THREE.PlaneGeometry( LANDSCAPE_WIDTH, LANDSCAPE_HEIGHT, 1, 1 ), groundMaterial );
     groundPlane.position.set( LANDSCAPE_WIDTH / 2, 0, LANDSCAPE_HEIGHT / 2 );
     groundPlane.receiveShadow = true;
@@ -296,6 +303,22 @@ import ImprovedNoise from './include/ImprovedNoise';
 
     // Events
     addEvent( window, 'resize', resize );
+
+    addEvent(window, 'keydown', function (e) {
+      if ( e.keyCode === 39 ) {
+        input.x = 1.0;
+      } else if ( e.keyCode === 37 ) {
+        input.x = -1.0;
+      }
+    });
+
+    addEvent(window, 'keyup', function (e) {
+      if ( e.keyCode === 39 ) {
+        input.x = 0;
+      } else if ( e.keyCode === 37 ) {
+        input.x = 0;
+      }
+    });
   };
 
   init();
