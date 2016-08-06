@@ -9,8 +9,8 @@ import Heightmap from './include/classes/heightmap';
 ( function () {
 
   // Rendering
-  const SHADOW_MAP_WIDTH = 512;
-  const SHADOW_MAP_HEIGHT = 512;
+  const SHADOW_MAP_WIDTH = 1024;
+  const SHADOW_MAP_HEIGHT = 1024;
   const SHADOW_CAM_SIZE = 512;
 
   // Trees
@@ -145,7 +145,7 @@ import Heightmap from './include/classes/heightmap';
     let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
       Math.abs( cameraAnchor.position.y / 50 ),
       Math.abs( cameraAnchor.position.z / 50 ) );
-    scene.fog.density = 0.0005; //( fog + 0.5 ) * 0.001 + 0.00025;
+    scene.fog.density = 0.0025; //( fog + 0.5 ) * 0.001 + 0.00025;
 
     cameraAnchor.position.x += dt * FLIGHT_SPEED;
 
@@ -223,15 +223,23 @@ import Heightmap from './include/classes/heightmap';
     }
   };
 
+  let getShader = function ( shaderStr ) {
+    return shaderStr.replace( /#include\s+(\S+)/gi, function ( match, p1 ) {
+      p1 = p1.substr( 1, p1.length - 2 );
+      var chunk = THREE.ShaderChunk[ p1 ];
+      return chunk ? chunk : "";
+    } );
+  };
+
   let loadMeshes = function () {
 
-    objectLoader.load( '/static/meshes/tree.json', ( obj ) => {
+    objectLoader.load( 'static/meshes/tree.json', ( obj ) => {
       let name = obj.name;
       meshStore[ name ] = obj;
       spawnTrees();
     } );
 
-    objectLoader.load( '/static/meshes/plane.json', ( obj ) => {
+    objectLoader.load( 'static/meshes/plane.json', ( obj ) => {
       player = new Player( obj.geometry, obj.material );
       scene.add( player );
     } );
@@ -245,10 +253,12 @@ import Heightmap from './include/classes/heightmap';
   let init = function () {
 
     // Renderer
-    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer = new THREE.WebGLRenderer( {
+      antialias: false
+    } );
     renderer.setClearColor( 0xF9FFE5, 1 );
     renderer.shadowMap.enabled = true;
-    renderer.shadowMapType = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById( 'container' ).appendChild( renderer.domElement );
 
     // Clock
@@ -256,7 +266,7 @@ import Heightmap from './include/classes/heightmap';
 
     // Scene
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2( 0xE9EEFF, 0.0025 );
+    scene.fog = new THREE.Fog( 0xF9FFE5, 600, 1000 );
 
     // Loading managers
     objectLoader = new THREE.ObjectLoader();
@@ -311,6 +321,28 @@ import Heightmap from './include/classes/heightmap';
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 
+    let uniforms = {
+      diffuse: {
+        type: 'c',
+        value: new THREE.Color( 0xff0033 )
+      },
+      foo: {
+        type: 'f',
+        value: 0.5
+      }
+    };
+    let landscapeMaterial = new THREE.ShaderMaterial( {
+      lights: true,
+      uniforms: THREE.UniformsUtils.merge( [
+        THREE.ShaderLib.phong.uniforms,
+        uniforms
+      ] ),
+      shading: THREE.FlatShading,
+      vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
+      fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
+    } );
+    console.log( landscapeMaterial.vertexShader );
+
     // Terrain patches
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
       terrainPatches[ i ] = [];
@@ -326,7 +358,7 @@ import Heightmap from './include/classes/heightmap';
           heightmap: heightmap,
           xIndex: j,
           yIndex: i,
-          material: groundMaterial
+          material: landscapeMaterial
         } );
         tp.receiveShadow = true;
         tp.castShadow = true;

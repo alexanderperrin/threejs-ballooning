@@ -1,6 +1,7 @@
 const path = require('path');
 var WebpackStripLoader = require( 'strip-loader' );
 var devConfig = require( './webpack.config.js' );
+var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 var stripLoader = {
   test: [ /\.js$/ ],
@@ -14,5 +15,10 @@ devConfig.output = {
 };
 
 devConfig.module.loaders.push( stripLoader );
+devConfig.plugins.push(
+  new CopyWebpackPlugin([
+    { from: 'static', to: 'static' }
+  ], { copyUnmodified: true }
+));
 
 module.exports = devConfig;
