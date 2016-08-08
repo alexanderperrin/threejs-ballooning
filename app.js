@@ -145,7 +145,7 @@ import Heightmap from './include/classes/heightmap';
     let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
       Math.abs( cameraAnchor.position.y / 50 ),
       Math.abs( cameraAnchor.position.z / 50 ) );
-    scene.fog.density = 0.0025; //( fog + 0.5 ) * 0.001 + 0.00025;
+    scene.fog.density = 0.0005; //( fog + 0.5 ) * 0.001 + 0.00025;
 
     cameraAnchor.position.x += dt * FLIGHT_SPEED;
 
@@ -266,7 +266,7 @@ import Heightmap from './include/classes/heightmap';
 
     // Scene
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog( 0xF9FFE5, 600, 1000 );
+    scene.fog = new THREE.FogExp2( 0xF9FFE5, 0.001 );
 
     // Loading managers
     objectLoader = new THREE.ObjectLoader();
@@ -301,7 +301,7 @@ import Heightmap from './include/classes/heightmap';
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    sun.position.set( 10, 15, 30 );
+    sun.position.set( 15, 15, 15 );
     shadowAnchor = new THREE.Object3D();
     shadowAnchor.add( sun.shadow.camera );
     scene.add( shadowAnchor );
@@ -322,13 +322,21 @@ import Heightmap from './include/classes/heightmap';
     shadowCam = sun.shadow.camera;
 
     let uniforms = {
-      diffuse: {
+      cliffColor: {
         type: 'c',
-        value: new THREE.Color( 0xff0033 )
+        value: new THREE.Color( 0x353535 )
       },
-      foo: {
+      grassColor: {
+        type: 'c',
+        value: new THREE.Color( 0x335F05 )
+      },
+      steps: {
         type: 'f',
-        value: 0.5
+        value: 1.0
+      },
+      threshold: {
+        type: 'f',
+        value: 0.25
       }
     };
     let landscapeMaterial = new THREE.ShaderMaterial( {
@@ -338,10 +346,11 @@ import Heightmap from './include/classes/heightmap';
         uniforms
       ] ),
       shading: THREE.FlatShading,
+      fog: true,
       vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
       fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
     } );
-    console.log( landscapeMaterial.vertexShader );
+
 
     // Terrain patches
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {

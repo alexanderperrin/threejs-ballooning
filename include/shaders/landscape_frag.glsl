@@ -1,11 +1,15 @@
 #define PHONG
 
-uniform vec3 diffuse;
+uniform vec3 cliffColor;
+uniform vec3 grassColor;
 uniform vec3 emissive;
 uniform vec3 specular;
 uniform float shininess;
 uniform float opacity;
-uniform float foo;
+uniform float steps;
+uniform float threshold;
+
+varying vec3 vWorldNormal;
 
 #include <common>
 #include <packing>
@@ -33,7 +37,9 @@ void main() {
 
 	#include <clipping_planes_fragment>
 
-	vec4 diffuseColor = vec4( diffuse, opacity );
+	float y = floor((vWorldNormal.y) * steps + threshold) / steps;
+	vec3 c = mix(cliffColor, grassColor, y);
+	vec4 diffuseColor = vec4( c, opacity );
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 	vec3 totalEmissiveRadiance = emissive;
 

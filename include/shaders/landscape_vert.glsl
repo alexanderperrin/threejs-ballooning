@@ -1,6 +1,7 @@
 #define PHONG
 
 varying vec3 vViewPosition;
+varying vec3 vWorldNormal;
 
 #ifndef FLAT_SHADED
 
@@ -47,6 +48,7 @@ void main() {
 	#include <clipping_planes_vertex>
 
 	vViewPosition = - mvPosition.xyz;
+	vWorldNormal = normal;
 
 	#include <worldpos_vertex>
 	#include <envmap_vertex>
