@@ -20,15 +20,12 @@ varying vec3 vWorldNormal;
 #include <alphamap_pars_fragment>
 #include <aomap_pars_fragment>
 #include <lightmap_pars_fragment>
-#include <emissivemap_pars_fragment>
 #include <envmap_pars_fragment>
 #include <fog_pars_fragment>
 #include <bsdfs>
 #include <lights_pars>
 #include <lights_phong_pars_fragment>
 #include <shadowmap_pars_fragment>
-#include <bumpmap_pars_fragment>
-#include <normalmap_pars_fragment>
 #include <specularmap_pars_fragment>
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
@@ -51,7 +48,6 @@ void main() {
 	#include <specularmap_fragment>
 	#include <normal_flip>
 	#include <normal_fragment>
-	#include <emissivemap_fragment>
 
 	// accumulation
 	#include <lights_phong_fragment>
