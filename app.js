@@ -140,6 +140,7 @@ import Heightmap from './include/classes/heightmap';
   let idle = function () {
 
     let dt = clock.getDelta();
+    window.flight.deltaTime = dt;
 
     // Fog modulation based on camera pos for fake cloud effect
     let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
@@ -148,6 +149,10 @@ import Heightmap from './include/classes/heightmap';
     scene.fog.density = 0.0005; //( fog + 0.5 ) * 0.001 + 0.00025;
 
     cameraAnchor.position.x += dt * FLIGHT_SPEED;
+
+    if ( player ) {
+      player.update();
+    }
 
     requestAnimationFrame( idle );
     render();
@@ -242,6 +247,7 @@ import Heightmap from './include/classes/heightmap';
     objectLoader.load( 'static/meshes/plane.json', ( obj ) => {
       player = new Player( obj.geometry, obj.material );
       scene.add( player );
+      player.castShadow = true;
     } );
 
   };
@@ -251,6 +257,9 @@ import Heightmap from './include/classes/heightmap';
   };
 
   let init = function () {
+
+    // Window vars (globals)
+    window.flight = {};
 
     // Renderer
     renderer = new THREE.WebGLRenderer( {
@@ -263,6 +272,7 @@ import Heightmap from './include/classes/heightmap';
 
     // Clock
     clock = new THREE.Clock( true );
+    window.flight.clock = clock;
 
     // Scene
     scene = new THREE.Scene();
@@ -350,7 +360,6 @@ import Heightmap from './include/classes/heightmap';
       vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
       fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
     } );
-
 
     // Terrain patches
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
