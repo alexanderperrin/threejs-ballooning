@@ -5,6 +5,7 @@ import ImprovedNoise from './include/ImprovedNoise';
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
+import Mathf from './include/classes/mathf';
 
 ( function () {
 
@@ -141,6 +142,7 @@ import Heightmap from './include/classes/heightmap';
 
     let dt = clock.getDelta();
     window.flight.deltaTime = dt;
+    window.flight.input = input;
 
     // Fog modulation based on camera pos for fake cloud effect
     let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
