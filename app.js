@@ -45,11 +45,7 @@ import Mathf from './include/classes/mathf';
 
   // Terrain stuff
   let noise = new ImprovedNoise();
-  let groundMaterial = new THREE.MeshPhongMaterial( {
-    color: 0x2E3A00,
-    shading: THREE.FlatShading,
-    shininess: 5
-  } );
+
   let heightmap = new Heightmap( {
     noise: noise,
     noiseOffset: {
@@ -333,6 +329,7 @@ import Mathf from './include/classes/mathf';
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 
+    // Terrain
     let uniforms = {
       cliffColor: {
         type: 'c',
@@ -340,7 +337,7 @@ import Mathf from './include/classes/mathf';
       },
       grassColor: {
         type: 'c',
-        value: new THREE.Color( 0x335F05 )
+        value: new THREE.Color( 0x475905 )
       },
       steps: {
         type: 'f',
@@ -351,6 +348,7 @@ import Mathf from './include/classes/mathf';
         value: 0.25
       }
     };
+
     let landscapeMaterial = new THREE.ShaderMaterial( {
       lights: true,
       uniforms: THREE.UniformsUtils.merge( [
@@ -386,6 +384,16 @@ import Mathf from './include/classes/mathf';
         scene.add( terrainPatches[ i ][ j ] );
       }
     }
+
+    // River plane
+    let riverMaterial = new THREE.MeshPhongMaterial( { color: 0x2f5d63 } );
+    let size = TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH;
+    let riverMesh = new THREE.PlaneGeometry( size, size, 1, 1 );
+    let river = new THREE.Mesh( riverMesh, riverMaterial );
+    river.position.y = -15;
+    river.rotation.x = -Math.PI / 2.0;
+    river.position.z = -TERRAIN_OFFSET_X;
+    scene.add( river );
 
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );

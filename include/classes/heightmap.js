@@ -29,6 +29,8 @@ class Heightmap {
     height *= 0.3;
     height *= Math.pow( Math.abs( 0.015 * x ), 2 ) + 0.5;
     height += Math.pow( Math.abs( 0.01 * x ), 2 ) * 0.1;
+    let river = 50 / Math.abs( x - ( this.perlinNoise( x, y, 0.5 ) - 0.5 ) * 200 );
+    height -= 0.5 * this.clamp( river, 0, 5 );
     return height * 10;
   }
 
