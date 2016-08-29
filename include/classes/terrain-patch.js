@@ -7,13 +7,30 @@ class TerrainPatch extends THREE.Mesh {
     this.objects = [];
     this.width = opts.hasOwnProperty( 'width' ) ? opts.width : 0;
     this.height = opts.hasOwnProperty( 'height' ) ? opts.height : 0;
-    this.xIndex = opts.hasOwnProperty( 'xIndex' ) ? opts.xIndex : 0;
-    this.yIndex = opts.hasOwnProperty( 'yIndex' ) ? opts.yIndex : 0;
     this.heightmap = opts.hasOwnProperty( 'heightmap' ) ? opts.heightmap : undefined;
     let position = opts.hasOwnProperty( 'position' ) ? opts.position : new THREE.Vector3();
     this.position.set( position.x, position.y, position.z );
     this.material = opts.hasOwnProperty( 'material' ) ? opts.material : undefined;
+    this.verts = null;
     this.geometry = this.createGeometry();
+  }
+
+  rebuild() {
+    let vertsX = SEGS_X + 1;
+    let vertsY = SEGS_Y + 1;
+    let v = 0;
+    for ( let i = 0; i < vertsY; ++i ) {
+      for ( let j = 0; j < vertsX; ++j, v += 3 ) {
+        this.verts[ v + 1 ] = 0.0;
+        let noise = this.heightmap.getHeight(
+          this.verts[ v ] + this.position.x,
+          this.verts[ v + 2 ] + this.position.z
+        );
+        this.verts[ v + 1 ] = noise;
+      }
+    }
+    this.geometry.attributes.position.needsUpdate = true;
+    this.geometry.computeVertexNormals();
   }
 
   createGeometry() {
@@ -21,7 +38,7 @@ class TerrainPatch extends THREE.Mesh {
     let vertsX = SEGS_X + 1;
     let vertsY = SEGS_Y + 1;
 
-    let verts = new Float32Array( vertsX * vertsY * 3 );
+    this.verts = new Float32Array( vertsX * vertsY * 3 );
     let v = 0;
     let stepX = this.width / SEGS_X;
     let stepY = this.height / SEGS_Y;
@@ -37,9 +54,9 @@ class TerrainPatch extends THREE.Mesh {
           pos.z + this.position.z
         );
         pos.y = noise;
-        verts[ v ] = pos.x;
-        verts[ v + 1 ] = pos.y;
-        verts[ v + 2 ] = pos.z;
+        this.verts[ v ] = pos.x;
+        this.verts[ v + 1 ] = pos.y;
+        this.verts[ v + 2 ] = pos.z;
       }
     }
 
@@ -56,12 +73,12 @@ class TerrainPatch extends THREE.Mesh {
       }
     }
 
-    geo.addAttribute( 'position', new THREE.BufferAttribute( verts, 3 ) );
+    geo.addAttribute( 'position', new THREE.BufferAttribute( this.verts, 3 ) );
     geo.setIndex( new THREE.BufferAttribute( indices, 1 ) );
     geo.computeVertexNormals();
-
+    console.log( geo );
     return geo;
   }
 }
 
-export default TerrainPatch;
+export default TerrainPatch;;

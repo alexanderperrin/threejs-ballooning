@@ -1,7 +1,7 @@
 import Mathf from './mathf';
 
-const FLIGHT_SPEED = 96;
-const HEIGHT = 96;
+const FLIGHT_SPEED = 60;
+const HEIGHT = 400;
 const MAX_BANK = 0.6;
 const BANK_SPEED = 0.5;
 const MAX_BANK_VEL = 1;
@@ -11,6 +11,7 @@ class Player extends THREE.Mesh {
     super( geometry, material );
     this.velocity = new THREE.Vector3();
     this.bankVelocity = 0.0;
+    this.gridPos = { x: 0, y: 0 };
   }
 
   update() {

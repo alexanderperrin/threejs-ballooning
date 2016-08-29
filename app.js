@@ -10,13 +10,13 @@ import Mathf from './include/classes/mathf';
 ( function () {
 
   // Rendering
-  const SHADOW_MAP_WIDTH = 1024;
-  const SHADOW_MAP_HEIGHT = 1024;
-  const SHADOW_CAM_SIZE = 512;
+  const SHADOW_MAP_WIDTH = 2048;
+  const SHADOW_MAP_HEIGHT = 2048;
+  const SHADOW_CAM_SIZE = 1024;
 
   // Trees
   const TREE_PATCH_SIZE = 96;
-  const TREE_PATCH_COUNT = 32;
+  const TREE_PATCH_COUNT = 64;
   const TREES_PER_PATCH = 64;
   const TREE_NOISE_SIZE = 100;
 
@@ -27,6 +27,7 @@ import Mathf from './include/classes/mathf';
   const TERRAIN_PATCHES_Z = 8;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = 0;
+  const TERRAIN_INDEX_OFFSET_Z = -3
 
   // Player
   const FLIGHT_SPEED = 64;
@@ -42,6 +43,7 @@ import Mathf from './include/classes/mathf';
   let meshStore = {};
 
   let player;
+  let gridAxisHelper = new THREE.AxisHelper( TERRAIN_PATCH_WIDTH );
 
   // Terrain stuff
   let noise = new ImprovedNoise();
@@ -55,6 +57,16 @@ import Mathf from './include/classes/mathf';
     height: 50,
     scale: 100
   } );
+
+  // Used for tracking terrain regeneration requirement
+  let terrainGridIndex = {
+    x: 0,
+    y: 0
+  };
+
+  let waterPlane;
+
+  let treePatches = [];
 
   // Directional light
   let sun;
@@ -122,6 +134,42 @@ import Mathf from './include/classes/mathf';
     updateRenderCamera();
   };
 
+  let shiftTerrain = function ( x, y ) {
+    for ( let i = 0; i < y; ++i ) {
+      for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
+        let tp = terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ][ j ];
+        tp.position.z += TERRAIN_PATCH_HEIGHT * TERRAIN_PATCHES_Z;
+        tp.rebuild();
+      }
+    }
+    for ( let i = 0; i < x; ++i ) {
+      for ( let j = 0; j < TERRAIN_PATCHES_Z; ++j ) {
+        let tp = terrainPatches[ j ][ terrainGridIndex.x % TERRAIN_PATCHES_X ];
+        tp.position.x += TERRAIN_PATCH_WIDTH * TERRAIN_PATCHES_X;
+        tp.rebuild();
+      }
+    }
+    terrainGridIndex.x += x;
+    terrainGridIndex.y += y;
+    waterPlane.position.z += TERRAIN_PATCH_HEIGHT * y;
+    shadowAnchor.position.z += TERRAIN_PATCH_HEIGHT * y;
+  };
+
+  let gridToWorld = function ( x, y ) {
+    return {
+      x: x * TERRAIN_PATCH_WIDTH,
+      y: 0,
+      z: y * TERRAIN_PATCH_HEIGHT
+    };
+  };
+
+  let worldToGrid = function ( pos ) {
+    return {
+      x: Math.round( pos.x / TERRAIN_PATCH_WIDTH ),
+      y: Math.round( pos.z / TERRAIN_PATCH_HEIGHT )
+    };
+  };
+
   let getRandomPositionOnLandscape = function () {
     return {
       x: getRandomArbitrary( 0, TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) + TERRAIN_OFFSET_X,
@@ -146,10 +194,21 @@ import Mathf from './include/classes/mathf';
       Math.abs( cameraAnchor.position.z / 50 ) );
     scene.fog.density = 0.0005; //( fog + 0.5 ) * 0.001 + 0.00025;
 
-    cameraAnchor.position.x += dt * FLIGHT_SPEED;
-
     if ( player ) {
       player.update();
+      player.gridPos = worldToGrid( player.position );
+
+      while ( player.gridPos.y + TERRAIN_INDEX_OFFSET_Z > terrainGridIndex.y ) {
+        // Shift forward
+        shiftTerrain( 0, 1 );
+      }
+
+      let pos = gridToWorld( player.gridPos.x, player.gridPos.y );
+      gridAxisHelper.position.set( pos.x, pos.y, pos.z );
+
+      cameraAnchor.position.set( player.position.x + 100,
+        0,
+        player.position.z + 100 );
     }
 
     requestAnimationFrame( idle );
@@ -222,6 +281,10 @@ import Mathf from './include/classes/mathf';
       let treePatch = new THREE.Mesh( treePatchGeo, mesh.material );
       treePatch.position.set( patchPos.x, patchPos.y, patchPos.z );
       treePatch.castShadow = true;
+      treePatches.push( {
+        mesh: treePatch,
+        gridPos: worldToGrid( treePatch.position )
+      } );
       scene.add( treePatch );
     }
   };
@@ -245,6 +308,7 @@ import Mathf from './include/classes/mathf';
     objectLoader.load( 'static/meshes/plane.json', ( obj ) => {
       player = new Player( obj.geometry, obj.material );
       scene.add( player );
+      scene.add( gridAxisHelper );
       player.castShadow = true;
     } );
 
@@ -288,12 +352,12 @@ import Mathf from './include/classes/mathf';
     scene.add( axisHelper );
 
     // Game camera
-    gameCamera = new THREE.PerspectiveCamera( 35.0, window.innerWidth / window.innerHeight, 100, 10000 );
+    gameCamera = new THREE.PerspectiveCamera( 20.0, window.innerWidth / window.innerHeight, 100, 10000 );
     cameraAnchor = new THREE.Object3D();
     cameraAnchor.position.set( ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2, 0, ( TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) / 2 );
     cameraAnchor.updateMatrix();
     cameraAnchor.add( gameCamera );
-    gameCamera.position.set( -200, 350, 200 );
+    gameCamera.position.set( -400, 1000, -400 );
     gameCamera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
     scene.add( cameraAnchor );
 
@@ -309,7 +373,7 @@ import Mathf from './include/classes/mathf';
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    sun.position.set( 15, 15, 15 );
+    sun.position.set( -15, 10, 15 );
     shadowAnchor = new THREE.Object3D();
     shadowAnchor.add( sun.shadow.camera );
     scene.add( shadowAnchor );
@@ -374,8 +438,6 @@ import Mathf from './include/classes/mathf';
             TERRAIN_PATCH_HEIGHT * i + TERRAIN_OFFSET_Z
           ),
           heightmap: heightmap,
-          xIndex: j,
-          yIndex: i,
           material: landscapeMaterial
         } );
         tp.receiveShadow = true;
@@ -389,11 +451,11 @@ import Mathf from './include/classes/mathf';
     let riverMaterial = new THREE.MeshPhongMaterial( { color: 0x2f5d63 } );
     let size = TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH;
     let riverMesh = new THREE.PlaneGeometry( size, size, 1, 1 );
-    let river = new THREE.Mesh( riverMesh, riverMaterial );
-    river.position.y = -15;
-    river.rotation.x = -Math.PI / 2.0;
-    river.position.z = -TERRAIN_OFFSET_X;
-    scene.add( river );
+    waterPlane = new THREE.Mesh( riverMesh, riverMaterial );
+    waterPlane.position.y = -15;
+    waterPlane.rotation.x = -Math.PI / 2.0;
+    waterPlane.position.z = -TERRAIN_OFFSET_X;
+    scene.add( waterPlane );
 
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
