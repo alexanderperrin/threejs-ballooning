@@ -5,7 +5,6 @@ import ImprovedNoise from './include/ImprovedNoise';
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
-import TerrainUtility from './include/classes/terrain-utility';
 
 ( function () {
 
@@ -24,8 +23,8 @@ import TerrainUtility from './include/classes/terrain-utility';
   // Terrain patches
   const TERRAIN_PATCH_WIDTH = 128;
   const TERRAIN_PATCH_HEIGHT = 128;
-  const TERRAIN_PATCHES_X = 1;
-  const TERRAIN_PATCHES_Z = 1;
+  const TERRAIN_PATCHES_X = 10;
+  const TERRAIN_PATCHES_Z = 12
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = 0;
   const TERRAIN_INDEX_OFFSET_Z = -2;
@@ -203,23 +202,22 @@ import TerrainUtility from './include/classes/terrain-utility';
 
     if ( player ) {
       // player.update();
-      // player.gridPos = worldToTerrainGrid( player.position );
-      //
-      // while ( player.gridPos.y + TERRAIN_INDEX_OFFSET_Z > terrainGridIndex.y ) {
-      //   // Shift forward
-      //   shiftTerrain( 0, 1 );
-      // }
-      //
-      // let pos = terrainGridToWorld( player.gridPos.x, player.gridPos.y );
-      //
-      // cameraAnchor.position.set( player.position.x + 100,
-      //   0,
-      //   player.position.z + 100 );
+      player.gridPos = worldToTerrainGrid( player.position );
+
+      while ( player.gridPos.y + TERRAIN_INDEX_OFFSET_Z > terrainGridIndex.y ) {
+        // Shift forward
+        shiftTerrain( 0, 1 );
+      }
+
+      let pos = terrainGridToWorld( player.gridPos.x, player.gridPos.y );
+
+      cameraAnchor.position.set( player.position.x + 100,
+        0,
+        player.position.z + 100 );
     }
 
     let t = window.flight.time / 10;
-    let terrainPos = terrainPatches[ 0 ][ 0 ].getPosition( { x: t, y: 0.85 } );
-    player.position.set( terrainPos.x, terrainPos.y, terrainPos.z );
+    player.position.set( 0, 10, t * 1024 );
 
     shadowAnchor.position.z = player.position.z;
 
@@ -502,7 +500,7 @@ import TerrainUtility from './include/classes/terrain-utility';
     scene.add( player );
     player.castShadow = true;
 
-    // spawnTrees();
+    spawnTrees();
 
     // Events
     addEvent( window, 'resize', resize );

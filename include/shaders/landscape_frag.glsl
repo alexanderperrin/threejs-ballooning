@@ -62,7 +62,7 @@ void main() {
 	#include <aomap_fragment>
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-	float dot = pow(saturate(1.0 - dot(normalize(vViewPosition), normal)), 4.0);
+	float dot = pow(saturate(1.0 - dot(normalize(vViewPosition), normal)), 5.0);
 	outgoingLight += vec3(0.8 * dot, dot, 0.7 * dot);
 
 	#include <envmap_fragment>

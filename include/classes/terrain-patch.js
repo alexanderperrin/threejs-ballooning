@@ -1,7 +1,7 @@
 import Mathf from './mathf';
 
-const SEGS_X = 4;
-const SEGS_Y = 4;
+const SEGS_X = 16;
+const SEGS_Y = 16;
 const VERTS_X = SEGS_X + 1;
 const VERTS_Y = SEGS_Y + 1;
 
@@ -58,13 +58,7 @@ class TerrainPatch extends THREE.Mesh {
     let ry1 = coord.y * SEGS_Y - iy1;
 
     let h1, h2, h;
-    // if (rx1 > 0.5 && ry1 > 0.5) {
-    //
-    // } else {
-    //
-    // }
-
-    // Interpolate heights of each vert using quadrilateral interpolation
+    // Interpolate heights of each vert using bilinear interpolation
     h1 = Mathf.lerp( this.verts[ i1 * 3 + 1 ], this.verts[ i2 * 3 + 1 ], rx1 ); // Bottom left to bottom right
     h2 = Mathf.lerp( this.verts[ i3 * 3 + 1 ], this.verts[ i4 * 3 + 1 ], rx1 ); // Top left to top right
     h = Mathf.lerp( h1, h2, ry1 );
