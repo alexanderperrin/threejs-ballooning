@@ -29,16 +29,36 @@ import Mathf from './include/classes/mathf';
   const TERRAIN_OFFSET_Z = 0;
   const TERRAIN_INDEX_OFFSET_Z = -3
 
+  // Data file locations
+  const IMAGE_PATH = 'static/images/';
+  const MESH_PATH = 'static/meshes/';
+
   // Player
   const FLIGHT_SPEED = 64;
+
+  // Meshes to load
+  let meshFiles = [
+    'plane.json',
+    'tree.json',
+  ];
+
+  // Image files to load
+  let imageFiles = [
+    'paper.png',
+    'grass.jpg',
+  ];
+
+  let meshes = {};
+  let textures = {};
 
   let renderer,
     scene,
     cameraControls,
-    objectLoader,
     shadowCam,
     cameraAnchor,
     clock;
+
+  let objectLoader = new THREE.ObjectLoader();
 
   let meshStore = {};
 
@@ -217,7 +237,7 @@ import Mathf from './include/classes/mathf';
 
   let spawnTrees = function () {
 
-    let mesh = meshStore[ 'Tree' ].clone();
+    let mesh = meshes[ 'Tree' ].clone();
     let meshGeo = mesh.geometry;
     let vertCount = meshGeo.attributes.position.count;
 
@@ -298,24 +318,40 @@ import Mathf from './include/classes/mathf';
   };
 
   let loadMeshes = function () {
-
-    objectLoader.load( 'static/meshes/tree.json', ( obj ) => {
-      let name = obj.name;
-      meshStore[ name ] = obj;
-      spawnTrees();
+    return new Promise( function ( resolve ) {
+      let numFiles = meshFiles.length;
+      meshFiles.forEach( v => {
+        objectLoader.load( MESH_PATH + v, ( obj ) => {
+          let name = obj.name;
+          meshes[ name ] = obj;
+          numFiles--;
+          if ( numFiles === 0 ) {
+            resolve();
+          }
+        } );
+      } );
     } );
-
-    objectLoader.load( 'static/meshes/plane.json', ( obj ) => {
-      player = new Player( obj.geometry, obj.material );
-      scene.add( player );
-      scene.add( gridAxisHelper );
-      player.castShadow = true;
-    } );
-
   };
 
-  let loadAssets = function () {
-    loadMeshes();
+  let loadTextures = function () {
+    return new Promise( function ( resolve ) {
+      let numFiles = imageFiles.length;
+      imageFiles.forEach( v => {
+        let texture = new THREE.Texture();
+        let image = new Image();
+        image.onload = function () {
+          texture.image = image;
+          texture.needsUpdate = true;
+          texture.name = v;
+          textures[ v ] = texture;
+          numFiles--;
+          if ( numFiles === 0 ) {
+            resolve();
+          }
+        };
+        image.src = IMAGE_PATH + v;
+      } );
+    } );
   };
 
   let init = function () {
@@ -339,9 +375,6 @@ import Mathf from './include/classes/mathf';
     // Scene
     scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2( 0xF9FFE5, 0.001 );
-
-    // Loading managers
-    objectLoader = new THREE.ObjectLoader();
 
     // Grid helper
     let gridHelper = new THREE.GridHelper( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH, TERRAIN_PATCH_WIDTH, 0x303030, 0x303030 );
@@ -413,17 +446,28 @@ import Mathf from './include/classes/mathf';
       }
     };
 
-    let landscapeMaterial = new THREE.ShaderMaterial( {
-      lights: true,
-      uniforms: THREE.UniformsUtils.merge( [
-        THREE.ShaderLib.phong.uniforms,
-        uniforms
-      ] ),
-      shading: THREE.FlatShading,
+    let t = textures[ 'grass.jpg' ];
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.needsUpdate = true;
+
+    let landscapeMaterial = new THREE.MeshPhongMaterial( {
+      color: 0x475905,
+      map: t,
       fog: true,
-      vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
-      fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
+      // shading: THREE.FlatShading,
     } );
+    // = new THREE.ShaderMaterial( {
+    //   lights: true,
+    //   uniforms: THREE.UniformsUtils.merge( [
+    //     THREE.ShaderLib.phong.uniforms,
+    //     uniforms
+    //   ] ),
+    //   shading: THREE.FlatShading,
+    //   fog: true,
+    //   vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
+    //   fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
+    // } );
 
     // Terrain patches
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
@@ -448,7 +492,9 @@ import Mathf from './include/classes/mathf';
     }
 
     // River plane
-    let riverMaterial = new THREE.MeshPhongMaterial( { color: 0x2f5d63 } );
+    let riverMaterial = new THREE.MeshPhongMaterial( {
+      color: 0x2f5d63
+    } );
     let size = TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH;
     let riverMesh = new THREE.PlaneGeometry( size, size, 1, 1 );
     waterPlane = new THREE.Mesh( riverMesh, riverMaterial );
@@ -465,7 +511,14 @@ import Mathf from './include/classes/mathf';
     hemiLight.position.set( 0, 500, 0 );
     scene.add( hemiLight );
 
-    resize();
+    // Player
+    let obj = meshes[ 'plane' ];
+    player = new Player( obj.geometry, obj.material );
+    scene.add( player );
+    scene.add( gridAxisHelper );
+    player.castShadow = true;
+
+    spawnTrees();
 
     // Events
     addEvent( window, 'resize', resize );
@@ -493,10 +546,13 @@ import Mathf from './include/classes/mathf';
         input.x = 0;
       }
     } );
+
+    resize();
   };
 
-  init();
-  loadAssets();
-  idle();
+  loadTextures()
+    .then( loadMeshes )
+    .then( init )
+    .then( idle );
 
 } )();
