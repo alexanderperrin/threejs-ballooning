@@ -45,6 +45,7 @@ import Mathf from './include/classes/mathf';
   // Image files to load
   let imageFiles = [
     'paper.png',
+    'grass.jpg',
   ];
 
   let meshes = {};
@@ -445,17 +446,28 @@ import Mathf from './include/classes/mathf';
       }
     };
 
-    let landscapeMaterial = new THREE.ShaderMaterial( {
-      lights: true,
-      uniforms: THREE.UniformsUtils.merge( [
-        THREE.ShaderLib.phong.uniforms,
-        uniforms
-      ] ),
-      shading: THREE.FlatShading,
+    let t = textures[ 'grass.jpg' ];
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
+    t.needsUpdate = true;
+
+    let landscapeMaterial = new THREE.MeshPhongMaterial( {
+      color: 0x475905,
+      map: t,
       fog: true,
-      vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
-      fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
+      // shading: THREE.FlatShading,
     } );
+    // = new THREE.ShaderMaterial( {
+    //   lights: true,
+    //   uniforms: THREE.UniformsUtils.merge( [
+    //     THREE.ShaderLib.phong.uniforms,
+    //     uniforms
+    //   ] ),
+    //   shading: THREE.FlatShading,
+    //   fog: true,
+    //   vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
+    //   fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
+    // } );
 
     // Terrain patches
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
@@ -508,8 +520,6 @@ import Mathf from './include/classes/mathf';
 
     spawnTrees();
 
-    resize();
-
     // Events
     addEvent( window, 'resize', resize );
 
@@ -536,6 +546,8 @@ import Mathf from './include/classes/mathf';
         input.x = 0;
       }
     } );
+
+    resize();
   };
 
   loadTextures()

@@ -11,7 +11,10 @@ class Player extends THREE.Mesh {
     super( geometry, material );
     this.velocity = new THREE.Vector3();
     this.bankVelocity = 0.0;
-    this.gridPos = { x: 0, y: 0 };
+    this.gridPos = {
+      x: 0,
+      y: 0
+    };
   }
 
   update() {
