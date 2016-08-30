@@ -1,3 +1,5 @@
+import Mathf from './mathf';
+
 const SEGS_X = 4;
 const SEGS_Y = 4;
 const VERTS_X = SEGS_X + 1;
@@ -37,13 +39,40 @@ class TerrainPatch extends THREE.Mesh {
 
   /// Get world position on terrain based off normalized XZ coordinates
   getPosition( coord ) {
-    let ix1 = Math.round( coord.x * SEGS_X );
-    let iy1 = Math.round( coord.y * SEGS_Y );
-    let index = VERTS_X * iy1 + ix1;
+
+    // Clamp coordinates
+    coord.x = coord.x > 1.0 ? 1.0 : coord.x < 0.0 ? 0.0 : coord.x;
+    coord.y = coord.y > 1.0 ? 1.0 : coord.y < 0.0 ? 0.0 : coord.y;
+
+    // Base vertex index
+    let ix1 = Math.floor( coord.x * SEGS_X );
+    let iy1 = Math.floor( coord.y * SEGS_Y );
+
+    let i1 = VERTS_X * iy1 + ix1; // Bottom left
+    let i2 = i1 + 1; // Bottom right
+    let i3 = i1 + VERTS_X; // Top left
+    let i4 = i3 + 1; // Top right
+
+    // Grid index interpolant time values collected from remainder
+    let rx1 = coord.x * SEGS_X - ix1;
+    let ry1 = coord.y * SEGS_Y - iy1;
+
+    let h1, h2, h;
+    // if (rx1 > 0.5 && ry1 > 0.5) {
+    //
+    // } else {
+    //
+    // }
+
+    // Interpolate heights of each vert using quadrilateral interpolation
+    h1 = Mathf.lerp( this.verts[ i1 * 3 + 1 ], this.verts[ i2 * 3 + 1 ], rx1 ); // Bottom left to bottom right
+    h2 = Mathf.lerp( this.verts[ i3 * 3 + 1 ], this.verts[ i4 * 3 + 1 ], rx1 ); // Top left to top right
+    h = Mathf.lerp( h1, h2, ry1 );
+
     return {
-      x: this.verts[ index * 3 ] + this.position.x,
-      y: this.verts[ index * 3 + 1 ] + this.position.y,
-      z: this.verts[ index * 3 + 2 ] + this.position.z,
+      x: coord.x * this.width + this.position.x, //this.verts[ index * 3 ] + this.position.x,
+      y: h, //this.verts[ index * 3 + 1 ] + this.position.y,
+      z: coord.y * this.height + this.position.z //this.verts[ index * 3 + 2 ] + this.position.z,
     };
   }
 
@@ -99,4 +128,4 @@ class TerrainPatch extends THREE.Mesh {
   }
 }
 
-export default TerrainPatch;
+export default TerrainPatch;;

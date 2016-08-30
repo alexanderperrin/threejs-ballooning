@@ -217,7 +217,8 @@ import TerrainUtility from './include/classes/terrain-utility';
       //   player.position.z + 100 );
     }
 
-    let terrainPos = terrainPatches[ 0 ][ 0 ].getPosition( { x: 0, y: window.flight.time / 10 } );
+    let t = window.flight.time / 10;
+    let terrainPos = terrainPatches[ 0 ][ 0 ].getPosition( { x: t, y: 0.85 } );
     player.position.set( terrainPos.x, terrainPos.y, terrainPos.z );
 
     shadowAnchor.position.z = player.position.z;
