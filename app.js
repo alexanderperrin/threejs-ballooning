@@ -15,19 +15,20 @@ import Mathf from './include/classes/mathf';
   const SHADOW_CAM_SIZE = 512;
 
   // Trees
-  const TREE_PATCH_SIZE = 96;
-  const TREE_PATCH_COUNT = 64;
-  const TREES_PER_PATCH = 64;
-  const TREE_NOISE_SIZE = 100;
+  const TREE_PATCH_SIZE = 64;
+  const TREE_PATCH_COUNT = 128;
+  const TREES_PER_PATCH = 128;
+  const TREE_NOISE_SIZE = 64;
+  const TREE_SCALE = 0.7;
 
   // Terrain patches
   const TERRAIN_PATCH_WIDTH = 128;
   const TERRAIN_PATCH_HEIGHT = 128;
   const TERRAIN_PATCHES_X = 8;
-  const TERRAIN_PATCHES_Z = 8;
+  const TERRAIN_PATCHES_Z = 12;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = 0;
-  const TERRAIN_INDEX_OFFSET_Z = -3
+  const TERRAIN_INDEX_OFFSET_Z = -2;
 
   // Data file locations
   const IMAGE_PATH = 'static/images/';
@@ -44,8 +45,6 @@ import Mathf from './include/classes/mathf';
 
   // Image files to load
   let imageFiles = [
-    'paper.png',
-    'grass.jpg',
   ];
 
   let meshes = {};
@@ -172,7 +171,6 @@ import Mathf from './include/classes/mathf';
     terrainGridIndex.x += x;
     terrainGridIndex.y += y;
     waterPlane.position.z += TERRAIN_PATCH_HEIGHT * y;
-    shadowAnchor.position.z += TERRAIN_PATCH_HEIGHT * y;
   };
 
   let gridToWorld = function ( x, y ) {
@@ -212,7 +210,7 @@ import Mathf from './include/classes/mathf';
     let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
       Math.abs( cameraAnchor.position.y / 50 ),
       Math.abs( cameraAnchor.position.z / 50 ) );
-    scene.fog.density = 0.0005; //( fog + 0.5 ) * 0.001 + 0.00025;
+    scene.fog.density = 0.0015; //( fog + 0.5 ) * 0.001 + 0.00025;
 
     if ( player ) {
       player.update();
@@ -231,13 +229,15 @@ import Mathf from './include/classes/mathf';
         player.position.z + 100 );
     }
 
+    shadowAnchor.position.z = player.position.z;
+
     requestAnimationFrame( idle );
     render();
   };
 
   let spawnTrees = function () {
 
-    let mesh = meshes[ 'Tree' ].clone();
+    let mesh = meshes[ 'tree' ].clone();
     let meshGeo = mesh.geometry;
     let vertCount = meshGeo.attributes.position.count;
 
@@ -272,16 +272,19 @@ import Mathf from './include/classes/mathf';
       let angle, dist, width, posX, posZ, noiseScale, sway;
       for ( let i = 0; i < TREES_PER_PATCH; ++i ) {
 
-        angle = getRandomArbitrary( 0, 2 * Math.PI );
-        dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
-        width = getRandomArbitrary( 0.5, 1 );
-        posX = Math.sin( angle ) * dist;
-        posZ = Math.cos( angle ) * dist;
-        let tx = patchPos.x + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_X;
-        let tz = patchPos.z + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_Z;
-        noiseScale = noise.noise( tx, 0, tz ) + 0.5;
-        sway = 0.05;
-        let posY = heightmap.getHeight( posX + patchPos.x, posZ + patchPos.z );
+        let posY = 0;
+        do {
+          angle = getRandomArbitrary( 0, 2 * Math.PI );
+          dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
+          width = getRandomArbitrary( 0.5, 1 );
+          posX = Math.sin( angle ) * dist;
+          posZ = Math.cos( angle ) * dist;
+          let tx = patchPos.x + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_X;
+          let tz = patchPos.z + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_Z;
+          noiseScale = noise.noise( tx, 0, tz ) + 0.5;
+          sway = 0.05;
+          posY = heightmap.getHeight( posX + patchPos.x, posZ + patchPos.z );
+        } while ( posY < -5 );
         p.set( posX, posY, posZ );
         q.setFromEuler(
           new THREE.Euler(
@@ -291,7 +294,7 @@ import Mathf from './include/classes/mathf';
             THREE.Euler.DefaultOrder
           )
         );
-        s.set( width, noiseScale + 0.5, width );
+        s.set( width * TREE_SCALE, ( noiseScale ) * TREE_SCALE, width * TREE_SCALE );
         m.compose( p, q, s );
         meshGeo.applyMatrix( m );
         treePatchGeo.merge( meshGeo, i * vertCount );
@@ -336,6 +339,9 @@ import Mathf from './include/classes/mathf';
   let loadTextures = function () {
     return new Promise( function ( resolve ) {
       let numFiles = imageFiles.length;
+      if ( numFiles === 0 ) {
+        resolve();
+      }
       imageFiles.forEach( v => {
         let texture = new THREE.Texture();
         let image = new Image();
@@ -374,7 +380,7 @@ import Mathf from './include/classes/mathf';
 
     // Scene
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2( 0xF9FFE5, 0.001 );
+    scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1650 );
 
     // Grid helper
     let gridHelper = new THREE.GridHelper( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH, TERRAIN_PATCH_WIDTH, 0x303030, 0x303030 );
@@ -385,13 +391,13 @@ import Mathf from './include/classes/mathf';
     scene.add( axisHelper );
 
     // Game camera
-    gameCamera = new THREE.PerspectiveCamera( 20.0, window.innerWidth / window.innerHeight, 100, 10000 );
+    gameCamera = new THREE.PerspectiveCamera( 25.0, window.innerWidth / window.innerHeight, 100, 10000 );
     cameraAnchor = new THREE.Object3D();
     cameraAnchor.position.set( ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2, 0, ( TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) / 2 );
     cameraAnchor.updateMatrix();
     cameraAnchor.add( gameCamera );
-    gameCamera.position.set( -400, 1000, -400 );
-    gameCamera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
+    gameCamera.position.set( 350, 270, -500 );
+    gameCamera.lookAt( new THREE.Vector3( 0, 50, 50 ) );
     scene.add( cameraAnchor );
 
     // Editor camera
@@ -412,7 +418,7 @@ import Mathf from './include/classes/mathf';
     scene.add( shadowAnchor );
 
     // Shadow
-    sun.castShadow = true;
+    sun.castShadow = false;
     sun.shadow.mapSize.width = SHADOW_MAP_WIDTH;
     sun.shadow.mapSize.height = SHADOW_MAP_HEIGHT;
     let sCamSize = SHADOW_CAM_SIZE;
@@ -423,7 +429,7 @@ import Mathf from './include/classes/mathf';
     sun.shadow.camera.far = 512;
     sun.shadow.camera.near = -512;
     sun.shadow.bias = -0.001;
-    scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
+    // scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 
     // Terrain
@@ -446,28 +452,17 @@ import Mathf from './include/classes/mathf';
       }
     };
 
-    let t = textures[ 'grass.jpg' ];
-    t.wrapS = THREE.RepeatWrapping;
-    t.wrapT = THREE.RepeatWrapping;
-    t.needsUpdate = true;
-
-    let landscapeMaterial = new THREE.MeshPhongMaterial( {
-      color: 0x475905,
-      map: t,
+    let landscapeMaterial = new THREE.ShaderMaterial( {
+      lights: true,
+      uniforms: THREE.UniformsUtils.merge( [
+        THREE.ShaderLib.phong.uniforms,
+        uniforms
+      ] ),
+      shading: THREE.FlatShading,
       fog: true,
-      // shading: THREE.FlatShading,
+      vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
+      fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
     } );
-    // = new THREE.ShaderMaterial( {
-    //   lights: true,
-    //   uniforms: THREE.UniformsUtils.merge( [
-    //     THREE.ShaderLib.phong.uniforms,
-    //     uniforms
-    //   ] ),
-    //   shading: THREE.FlatShading,
-    //   fog: true,
-    //   vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
-    //   fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
-    // } );
 
     // Terrain patches
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
