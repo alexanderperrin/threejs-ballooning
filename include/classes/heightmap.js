@@ -22,7 +22,6 @@ class Heightmap {
   getHeight( x, y ) {
     let n1 = this.clamp( this.perlinNoise( x, y, 0.5 ) + 0.2, 0, 1 );
     let n2 = this.perlinNoise( x, y, 2 ) + 0.2;
-    let n3 = this.perlinNoise( x, y, 5 );
     let height = this.lerp( n1, n2, 0.2 );
     height *= this.clamp( Math.pow( height + 0.5, 5 ), 0, 1 );
     height = this.lerp( height, this.step( height, 6 ), this.perlinNoise( x, 0.2, 10 ) );

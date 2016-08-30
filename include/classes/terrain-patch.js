@@ -1,5 +1,7 @@
-const SEGS_X = 16;
-const SEGS_Y = 16;
+const SEGS_X = 4;
+const SEGS_Y = 4;
+const VERTS_X = SEGS_X + 1;
+const VERTS_Y = SEGS_Y + 1;
 
 class TerrainPatch extends THREE.Mesh {
   constructor( opts ) {
@@ -31,6 +33,18 @@ class TerrainPatch extends THREE.Mesh {
     }
     this.geometry.attributes.position.needsUpdate = true;
     this.geometry.computeVertexNormals();
+  }
+
+  /// Get world position on terrain based off normalized XZ coordinates
+  getPosition( coord ) {
+    let ix1 = Math.round( coord.x * SEGS_X );
+    let iy1 = Math.round( coord.y * SEGS_Y );
+    let index = VERTS_X * iy1 + ix1;
+    return {
+      x: this.verts[ index * 3 ] + this.position.x,
+      y: this.verts[ index * 3 + 1 ] + this.position.y,
+      z: this.verts[ index * 3 + 2 ] + this.position.z,
+    };
   }
 
   createGeometry() {
@@ -85,4 +99,4 @@ class TerrainPatch extends THREE.Mesh {
   }
 }
 
-export default TerrainPatch;;
+export default TerrainPatch;

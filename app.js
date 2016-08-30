@@ -5,7 +5,7 @@ import ImprovedNoise from './include/ImprovedNoise';
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
-import Mathf from './include/classes/mathf';
+import TerrainUtility from './include/classes/terrain-utility';
 
 ( function () {
 
@@ -24,8 +24,8 @@ import Mathf from './include/classes/mathf';
   // Terrain patches
   const TERRAIN_PATCH_WIDTH = 128;
   const TERRAIN_PATCH_HEIGHT = 128;
-  const TERRAIN_PATCHES_X = 8;
-  const TERRAIN_PATCHES_Z = 12;
+  const TERRAIN_PATCHES_X = 1;
+  const TERRAIN_PATCHES_Z = 1;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = 0;
   const TERRAIN_INDEX_OFFSET_Z = -2;
@@ -33,9 +33,6 @@ import Mathf from './include/classes/mathf';
   // Data file locations
   const IMAGE_PATH = 'static/images/';
   const MESH_PATH = 'static/meshes/';
-
-  // Player
-  const FLIGHT_SPEED = 64;
 
   // Meshes to load
   let meshFiles = [
@@ -59,10 +56,7 @@ import Mathf from './include/classes/mathf';
 
   let objectLoader = new THREE.ObjectLoader();
 
-  let meshStore = {};
-
   let player;
-  let gridAxisHelper = new THREE.AxisHelper( TERRAIN_PATCH_WIDTH );
 
   // Terrain stuff
   let noise = new ImprovedNoise();
@@ -173,7 +167,7 @@ import Mathf from './include/classes/mathf';
     waterPlane.position.z += TERRAIN_PATCH_HEIGHT * y;
   };
 
-  let gridToWorld = function ( x, y ) {
+  let terrainGridToWorld = function ( x, y ) {
     return {
       x: x * TERRAIN_PATCH_WIDTH,
       y: 0,
@@ -181,7 +175,7 @@ import Mathf from './include/classes/mathf';
     };
   };
 
-  let worldToGrid = function ( pos ) {
+  let worldToTerrainGrid = function ( pos ) {
     return {
       x: Math.round( pos.x / TERRAIN_PATCH_WIDTH ),
       y: Math.round( pos.z / TERRAIN_PATCH_HEIGHT )
@@ -205,29 +199,26 @@ import Mathf from './include/classes/mathf';
     let dt = clock.getDelta();
     window.flight.deltaTime = dt;
     window.flight.input = input;
-
-    // Fog modulation based on camera pos for fake cloud effect
-    let fog = noise.noise( Math.abs( cameraAnchor.position.x / 50 ),
-      Math.abs( cameraAnchor.position.y / 50 ),
-      Math.abs( cameraAnchor.position.z / 50 ) );
-    scene.fog.density = 0.0015; //( fog + 0.5 ) * 0.001 + 0.00025;
+    window.flight.time = clock.getElapsedTime();
 
     if ( player ) {
-      player.update();
-      player.gridPos = worldToGrid( player.position );
-
-      while ( player.gridPos.y + TERRAIN_INDEX_OFFSET_Z > terrainGridIndex.y ) {
-        // Shift forward
-        shiftTerrain( 0, 1 );
-      }
-
-      let pos = gridToWorld( player.gridPos.x, player.gridPos.y );
-      gridAxisHelper.position.set( pos.x, pos.y, pos.z );
-
-      cameraAnchor.position.set( player.position.x + 100,
-        0,
-        player.position.z + 100 );
+      // player.update();
+      // player.gridPos = worldToTerrainGrid( player.position );
+      //
+      // while ( player.gridPos.y + TERRAIN_INDEX_OFFSET_Z > terrainGridIndex.y ) {
+      //   // Shift forward
+      //   shiftTerrain( 0, 1 );
+      // }
+      //
+      // let pos = terrainGridToWorld( player.gridPos.x, player.gridPos.y );
+      //
+      // cameraAnchor.position.set( player.position.x + 100,
+      //   0,
+      //   player.position.z + 100 );
     }
+
+    let terrainPos = terrainPatches[ 0 ][ 0 ].getPosition( { x: 0, y: window.flight.time / 10 } );
+    player.position.set( terrainPos.x, terrainPos.y, terrainPos.z );
 
     shadowAnchor.position.z = player.position.z;
 
@@ -306,7 +297,7 @@ import Mathf from './include/classes/mathf';
       treePatch.castShadow = true;
       treePatches.push( {
         mesh: treePatch,
-        gridPos: worldToGrid( treePatch.position )
+        gridPos: worldToTerrainGrid( treePatch.position )
       } );
       scene.add( treePatch );
     }
@@ -323,6 +314,9 @@ import Mathf from './include/classes/mathf';
   let loadMeshes = function () {
     return new Promise( function ( resolve ) {
       let numFiles = meshFiles.length;
+      if ( numFiles === 0 ) {
+        resolve();
+      }
       meshFiles.forEach( v => {
         objectLoader.load( MESH_PATH + v, ( obj ) => {
           let name = obj.name;
@@ -374,20 +368,16 @@ import Mathf from './include/classes/mathf';
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById( 'container' ).appendChild( renderer.domElement );
 
-    // Clock
+    /// CLOCK
     clock = new THREE.Clock( true );
     window.flight.clock = clock;
 
-    // Scene
+    /// SCENE
     scene = new THREE.Scene();
     scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1650 );
 
-    // Grid helper
-    let gridHelper = new THREE.GridHelper( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH, TERRAIN_PATCH_WIDTH, 0x303030, 0x303030 );
-    scene.add( gridHelper );
-
-    // Origin
-    let axisHelper = new THREE.AxisHelper( 3 );
+    // ORIGIN
+    let axisHelper = new THREE.AxisHelper( TERRAIN_PATCH_WIDTH );
     scene.add( axisHelper );
 
     // Game camera
@@ -429,7 +419,6 @@ import Mathf from './include/classes/mathf';
     sun.shadow.camera.far = 512;
     sun.shadow.camera.near = -512;
     sun.shadow.bias = -0.001;
-    // scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
     shadowCam = sun.shadow.camera;
 
     // Terrain
@@ -510,10 +499,9 @@ import Mathf from './include/classes/mathf';
     let obj = meshes[ 'plane' ];
     player = new Player( obj.geometry, obj.material );
     scene.add( player );
-    scene.add( gridAxisHelper );
     player.castShadow = true;
 
-    spawnTrees();
+    // spawnTrees();
 
     // Events
     addEvent( window, 'resize', resize );

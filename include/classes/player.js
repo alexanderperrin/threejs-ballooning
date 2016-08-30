@@ -1,6 +1,6 @@
 import Mathf from './mathf';
 
-const FLIGHT_SPEED = 64;
+const FLIGHT_SPEED = 0;
 const HEIGHT = 400;
 const MAX_BANK = 0.6;
 const BANK_SPEED = 0.5;
