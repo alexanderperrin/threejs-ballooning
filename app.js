@@ -10,9 +10,9 @@ import Mathf from './include/classes/mathf';
 ( function () {
 
   // Rendering
-  const SHADOW_MAP_WIDTH = 2048;
-  const SHADOW_MAP_HEIGHT = 2048;
-  const SHADOW_CAM_SIZE = 1024;
+  const SHADOW_MAP_WIDTH = 512;
+  const SHADOW_MAP_HEIGHT = 512;
+  const SHADOW_CAM_SIZE = 512;
 
   // Trees
   const TREE_PATCH_SIZE = 96;
@@ -369,7 +369,7 @@ import Mathf from './include/classes/mathf';
     cameraControls.update();
 
     // Main camera is the camera currently being rendered
-    renderCamera = editorCamera;
+    renderCamera = gameCamera;
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
