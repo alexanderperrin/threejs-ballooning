@@ -122,4 +122,4 @@ class TerrainPatch extends THREE.Mesh {
   }
 }
 
-export default TerrainPatch;;
+export default TerrainPatch;
