@@ -168,7 +168,6 @@ import Zlib from 'zlibjs';
     for ( let i = 0; i < treePatches.length; ++i ) {
       let tp = treePatches[ i ];
       if ( terrainGridIndex.y > tp.gridPos.y ) {
-        tp.mesh.translateZ( TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT );
         tp.gridPos = worldToTerrainGrid( tp.mesh.position );
       }
     }
@@ -237,7 +236,7 @@ import Zlib from 'zlibjs';
 
   let spawnTreePatch = function ( patchPos ) {
 
-    let mesh = meshes[ 'tree' ].clone();
+    let mesh = meshes[ 'tree' ];
     let meshGeo = mesh.geometry;
     let vertCount = meshGeo.attributes.position.count;
 
@@ -271,11 +270,13 @@ import Zlib from 'zlibjs';
     let angle, dist, width, posX, posZ, posY, noiseTimeX, noiseTimeZ, noiseScale, sway;
     for ( let i = 0; i < TREES_PER_PATCH; ++i ) {
       angle = getRandomArbitrary( 0, 2 * Math.PI );
+
       // Distance from center of tree patch
       dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
       width = getRandomArbitrary( 0.5, 1 );
       posX = Math.sin( angle ) * dist;
       posZ = Math.cos( angle ) * dist;
+
       // Perlin noise for scale modulation
       noiseScale = noise.noise(
         patchPos.x + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_X,
