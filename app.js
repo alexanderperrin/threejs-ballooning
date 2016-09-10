@@ -226,57 +226,60 @@ import Heightmap from './include/classes/heightmap';
   };
 
   let spawnTrees = function () {
-
     let mesh = meshes[ 'tree' ].clone();
     let meshGeo = mesh.geometry;
     let vertCount = meshGeo.attributes.position.count;
 
-    let m = new THREE.Matrix4();
-    let q = new THREE.Quaternion();
-    let p = new THREE.Vector3();
-    let s = new THREE.Vector3();
+    let matrix = new THREE.Matrix4();
+    let rotation = new THREE.Quaternion();
+    let position = new THREE.Vector3();
+    let scale = new THREE.Vector3();
 
+    // Spawn tree patches
     for ( let j = 0; j < TREE_PATCH_COUNT; ++j ) {
 
+      // Center position of tree patch
       let patchPos = getRandomPositionOnLandscape();
-
       // Tree patch geometry
       let treePatchGeo = new THREE.BufferGeometry();
-      // Geometry attributes
-      let colorAttrib = new THREE.Float32Attribute(
-        new Float32Array( vertCount * meshGeo.attributes.color.itemSize * TREES_PER_PATCH ),
-        meshGeo.attributes.color.itemSize
-      );
+      // Vertex positions
       let posAttrib = new THREE.Float32Attribute(
         new Float32Array( vertCount * meshGeo.attributes.position.itemSize * TREES_PER_PATCH ),
         meshGeo.attributes.position.itemSize
       );
+      // Vertex normals
       let normAttrib = new THREE.Float32Attribute(
         new Float32Array( vertCount * meshGeo.attributes.position.itemSize * TREES_PER_PATCH ),
         meshGeo.attributes.position.itemSize
       );
-      treePatchGeo.addAttribute( 'color', colorAttrib );
+      // Vertex colours
+      let colorAttrib = new THREE.Float32Attribute(
+        new Float32Array( vertCount * meshGeo.attributes.color.itemSize * TREES_PER_PATCH ),
+        meshGeo.attributes.color.itemSize
+      );
       treePatchGeo.addAttribute( 'position', posAttrib );
       treePatchGeo.addAttribute( 'normal', normAttrib );
+      treePatchGeo.addAttribute( 'color', colorAttrib );
 
-      let angle, dist, width, posX, posZ, noiseScale, sway;
+      // Create individual trees for the patch
+      let angle, dist, width, posX, posZ, posY, noiseTimeX, noiseTimeZ, noiseScale, sway;
       for ( let i = 0; i < TREES_PER_PATCH; ++i ) {
-
-        let posY = 0;
-        do {
-          angle = getRandomArbitrary( 0, 2 * Math.PI );
-          dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
-          width = getRandomArbitrary( 0.5, 1 );
-          posX = Math.sin( angle ) * dist;
-          posZ = Math.cos( angle ) * dist;
-          let tx = patchPos.x + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_X;
-          let tz = patchPos.z + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_Z;
-          noiseScale = noise.noise( tx, 0, tz ) + 0.5;
-          sway = 0.05;
-          posY = heightmap.getHeight( posX + patchPos.x, posZ + patchPos.z );
-        } while ( posY < -5 );
-        p.set( posX, posY, posZ );
-        q.setFromEuler(
+        angle = getRandomArbitrary( 0, 2 * Math.PI );
+        // Distance from center of tree patch
+        dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
+        width = getRandomArbitrary( 0.5, 1 );
+        posX = Math.sin( angle ) * dist;
+        posZ = Math.cos( angle ) * dist;
+        // Perlin noise for scale modulation
+        noiseScale = noise.noise(
+          patchPos.x + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_X,
+          0,
+          patchPos.z + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_Z
+        ) + 0.5;
+        sway = 0.05;
+        posY = heightmap.getHeight( posX + patchPos.x, posZ + patchPos.z );
+        position.set( posX, posY, posZ );
+        rotation.setFromEuler(
           new THREE.Euler(
             getRandomArbitrary( -sway, sway ),
             getRandomArbitrary( 0, Math.PI * 2 ),
@@ -284,11 +287,11 @@ import Heightmap from './include/classes/heightmap';
             THREE.Euler.DefaultOrder
           )
         );
-        s.set( width * TREE_SCALE, ( noiseScale ) * TREE_SCALE, width * TREE_SCALE );
-        m.compose( p, q, s );
-        meshGeo.applyMatrix( m );
+        scale.set( width * TREE_SCALE, ( noiseScale ) * TREE_SCALE, width * TREE_SCALE );
+        matrix.compose( position, rotation, scale );
+        meshGeo.applyMatrix( matrix );
         treePatchGeo.merge( meshGeo, i * vertCount );
-        meshGeo.applyMatrix( m.getInverse( m ) );
+        meshGeo.applyMatrix( matrix.getInverse( matrix ) );
       }
 
       let treePatch = new THREE.Mesh( treePatchGeo, mesh.material );
