@@ -372,12 +372,7 @@ import Heightmap from './include/classes/heightmap';
     } );
   };
 
-  let init = function () {
-
-    // Window vars (globals)
-    window.flight = {};
-
-    // Renderer
+  let initRenderer = function () {
     renderer = new THREE.WebGLRenderer( {
       antialias: false
     } );
@@ -385,16 +380,12 @@ import Heightmap from './include/classes/heightmap';
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById( 'container' ).appendChild( renderer.domElement );
+  };
 
-    /// CLOCK
-    clock = new THREE.Clock( true );
-    window.flight.clock = clock;
+  let initScene = function () {
 
-    /// SCENE
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1650 );
 
-    // ORIGIN
     let axisHelper = new THREE.AxisHelper( TERRAIN_PATCH_WIDTH );
     scene.add( axisHelper );
 
@@ -415,7 +406,6 @@ import Heightmap from './include/classes/heightmap';
     editorCamera.position.set( -250, 350, -250 );
     cameraControls.update();
 
-    // Main camera is the camera currently being rendered
     renderCamera = gameCamera;
 
     // Lights
@@ -424,8 +414,14 @@ import Heightmap from './include/classes/heightmap';
     shadowAnchor = new THREE.Object3D();
     shadowAnchor.add( sun.shadow.camera );
     scene.add( shadowAnchor );
+    scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
+    scene.add( sun );
+    scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1650 );
+    let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
+    hemiLight.position.set( 0, 500, 0 );
+    scene.add( hemiLight );
 
-    // Shadow
+    // Shadows
     sun.castShadow = false;
     sun.shadow.mapSize.width = SHADOW_MAP_WIDTH;
     sun.shadow.mapSize.height = SHADOW_MAP_HEIGHT;
@@ -438,8 +434,11 @@ import Heightmap from './include/classes/heightmap';
     sun.shadow.camera.near = -512;
     sun.shadow.bias = -0.001;
     shadowCam = sun.shadow.camera;
+  };
 
-    // Terrain
+  let initTerrain = function () {
+
+    // Shader uniforms
     let uniforms = {
       cliffColor: {
         type: 'c',
@@ -459,6 +458,7 @@ import Heightmap from './include/classes/heightmap';
       }
     };
 
+    // Materials
     let landscapeMaterial = new THREE.ShaderMaterial( {
       lights: true,
       uniforms: THREE.UniformsUtils.merge( [
@@ -504,43 +504,45 @@ import Heightmap from './include/classes/heightmap';
     waterPlane.rotation.x = -Math.PI / 2.0;
     waterPlane.position.z = -TERRAIN_OFFSET_X;
     scene.add( waterPlane );
+  };
 
-    scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
-    scene.add( sun );
-
-    // Hemi light
-    let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
-    hemiLight.position.set( 0, 500, 0 );
-    scene.add( hemiLight );
-
-    // Player
+  let initPlayer = function () {
     let obj = meshes[ 'balloon' ];
     player = new Player();
     player.add( obj );
     scene.add( player );
+  };
 
-    spawnTrees();
+  let init = function () {
+
+    window.flight = {};
+    clock = new THREE.Clock( true );
+    window.flight.clock = clock;
+
+    initRenderer();
+    initScene();
+    initTerrain();
+    initPlayer();
 
     // Events
     addEvent( window, 'resize', resize );
-
     addEvent( window, 'keydown', function ( e ) {
+      // Inputs
       if ( e.keyCode === 39 ) {
         input.x = 1.0;
       } else if ( e.keyCode === 37 ) {
         input.x = -1.0;
       } else if ( e.keyCode === 32 ) {
+        // Camera switching
         if ( renderCamera === editorCamera ) {
           renderCamera = gameCamera;
-          console.log( 'Using game camera.' );
         } else {
           renderCamera = editorCamera;
-          console.log( 'Using editor camera.' );
         }
       }
     } );
-
     addEvent( window, 'keyup', function ( e ) {
+      // Inputs
       if ( e.keyCode === 39 ) {
         input.x = 0;
       } else if ( e.keyCode === 37 ) {
