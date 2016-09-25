@@ -7,7 +7,7 @@ const BANK_SPEED = 0.5;
 const MAX_BANK_VEL = 1;
 
 class Player extends THREE.Object3D {
-  constructor( geometry, material ) {
+  constructor() {
     super();
     this.velocity = new THREE.Vector3();
     this.bankVelocity = 0.0;

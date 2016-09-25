@@ -1,9 +1,16 @@
 import ImprovedNoise from '../ImprovedNoise';
 
+const VALLEY_01_SCALE = 0.035;
+const VALLEY_02_SCALE = 0.01;
+const VALLEY_01_MULT = 1.0;
+const VALLEY_02_MULT = 0.5;
+const HEIGHT_MULT = 5.0;
+const RIVER_WIDTH = 100.0;
+
 class Heightmap {
+
   constructor( opts ) {
-    console.log( opts );
-    this.noise = opts.hasOwnProperty( 'noise' ) ? opts.noise : new ImprovedNoise();
+    this.noise = new ImprovedNoise();
     this.scale = opts.hasOwnProperty( 'scale' ) ? opts.scale : 100;
     this.height = opts.hasOwnProperty( 'height' ) ? opts.height : 0;
     this.noiseOffset = opts.hasOwnProperty( 'noiseOffset' ) ? opts.noiseOffset : 0;
@@ -26,11 +33,14 @@ class Heightmap {
     height *= this.clamp( Math.pow( height + 0.5, 5 ), 0, 1 );
     height = this.lerp( height, this.step( height, 6 ), this.perlinNoise( x, 0.2, 10 ) );
     height *= 0.3;
-    height *= Math.pow( Math.abs( 0.015 * x ), 2 ) + 0.5;
-    height += Math.pow( Math.abs( 0.01 * x ), 2 ) * 0.1;
-    let river = 50 / Math.abs( x - ( this.perlinNoise( x, y, 0.5 ) - 0.5 ) * 200 );
+    height *= Math.pow( Math.abs( VALLEY_01_SCALE * x ), 2 ) * VALLEY_01_MULT + 0.5;
+    height += Math.pow( Math.abs( VALLEY_02_SCALE * x ), 2 ) * VALLEY_02_MULT;
+
+    // River
+    let river = RIVER_WIDTH / Math.abs( x - ( this.perlinNoise( x, y, 0.5 ) - 0.5 ) * 200 );
     height -= 0.5 * this.clamp( river, 0, 5 );
-    return height * 10;
+
+    return height * HEIGHT_MULT;
   }
 
   perlinNoise( x, y, frequency ) {
