@@ -43,12 +43,13 @@ import Heightmap from './include/classes/heightmap';
   let player;
 
   // Terrain
-  const TERRAIN_PATCH_WIDTH = 128;
-  const TERRAIN_PATCH_HEIGHT = 128;
-  const TERRAIN_PATCHES_X = 3;
-  const TERRAIN_PATCHES_Z = 5;
-  const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
-  const TERRAIN_OFFSET_Z = 0;
+  const TERRAIN_PATCH_WIDTH = 64;
+  const TERRAIN_PATCH_HEIGHT = 64;
+  const TERRAIN_PATCHES_X = 8;
+  const TERRAIN_PATCHES_Z = 11;
+  const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5 - 64;
+  const TERRAIN_OFFSET_Z = -64;
+  const TREES_PER_TERRAIN = 100;
   let heightmap = new Heightmap( {
     noiseOffset: {
       x: -TERRAIN_OFFSET_X,
@@ -59,10 +60,11 @@ import Heightmap from './include/classes/heightmap';
   } );
   let terrainPatches = [];
   let waterPlane;
+  // Used for tracking terrain regeneration requirement
   let terrainGridIndex = {
     x: 0,
     y: 0
-  }; // Used for tracking terrain regeneration requirement
+  };
 
   // Input
   let input = {
@@ -284,13 +286,13 @@ import Heightmap from './include/classes/heightmap';
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    sun.position.set( -15, 10, 15 );
+    sun.position.set( -20, 20, 15 );
     shadowAnchor = new THREE.Object3D();
     shadowAnchor.add( sun.shadow.camera );
     scene.add( shadowAnchor );
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
-    // scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1650 );
+    scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1000 );
     let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
     hemiLight.position.set( 0, 500, 0 );
     scene.add( hemiLight );
@@ -362,7 +364,7 @@ import Heightmap from './include/classes/heightmap';
         } );
         tp.receiveShadow = true;
         tp.castShadow = true;
-        tp.addScatterObject( meshes[ 'tree' ], 250 );
+        tp.addScatterObject( meshes[ 'tree' ], TREES_PER_TERRAIN );
         terrainPatches[ i ][ j ] = tp;
         scene.add( terrainPatches[ i ][ j ] );
       }
@@ -373,7 +375,9 @@ import Heightmap from './include/classes/heightmap';
       color: 0x2f5d63
     } );
     let size = TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH;
-    let riverMesh = new THREE.PlaneGeometry( size, size, 1, 1 );
+    let riverMesh = new THREE.PlaneGeometry( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH,
+      TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT,
+      1, 1 );
     waterPlane = new THREE.Mesh( riverMesh, riverMaterial );
     waterPlane.position.y = -15;
     waterPlane.rotation.x = -Math.PI / 2.0;

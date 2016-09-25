@@ -1,7 +1,7 @@
 import Mathf from './mathf';
 
-const SEGS_X = 16;
-const SEGS_Y = 16;
+const SEGS_X = 8;
+const SEGS_Y = 8;
 const VERTS_X = SEGS_X + 1;
 
 class TerrainPatch extends THREE.Mesh {
