@@ -45,11 +45,11 @@ import Heightmap from './include/classes/heightmap';
   // Terrain
   const TERRAIN_PATCH_WIDTH = 64;
   const TERRAIN_PATCH_HEIGHT = 64;
-  const TERRAIN_PATCHES_X = 8;
-  const TERRAIN_PATCHES_Z = 11;
-  const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5 - 64;
+  const TERRAIN_PATCHES_X = 5;
+  const TERRAIN_PATCHES_Z = 12;
+  const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = -64;
-  const TREES_PER_TERRAIN = 100;
+  const TREES_PER_TERRAIN = 200;
   let heightmap = new Heightmap( {
     noiseOffset: {
       x: -TERRAIN_OFFSET_X,
@@ -136,7 +136,7 @@ import Heightmap from './include/classes/heightmap';
       for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
         let tp = terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ][ j ];
         tp.position.z += TERRAIN_PATCH_HEIGHT * TERRAIN_PATCHES_Z;
-        tp.rebuild();
+        tp.rebuild( scene );
       }
     }
     // Shift right
@@ -144,7 +144,7 @@ import Heightmap from './include/classes/heightmap';
       for ( let j = 0; j < TERRAIN_PATCHES_Z; ++j ) {
         let tp = terrainPatches[ j ][ terrainGridIndex.x % TERRAIN_PATCHES_X ];
         tp.position.x += TERRAIN_PATCH_WIDTH * TERRAIN_PATCHES_X;
-        tp.rebuild();
+        tp.rebuild( scene );
       }
     }
     terrainGridIndex.x += x;
@@ -265,25 +265,6 @@ import Heightmap from './include/classes/heightmap';
     let axisHelper = new THREE.AxisHelper( TERRAIN_PATCH_WIDTH );
     scene.add( axisHelper );
 
-    // Game camera
-    gameCamera = new THREE.PerspectiveCamera( 15.0, window.innerWidth / window.innerHeight, 100, 10000 );
-    cameraAnchor = new THREE.Object3D();
-    cameraAnchor.position.set( ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2, 0, ( TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) / 2 );
-    cameraAnchor.updateMatrix();
-    cameraAnchor.add( gameCamera );
-    gameCamera.position.set( 100, 250, -300 );
-    gameCamera.lookAt( new THREE.Vector3( 0, 100, 0 ) );
-    scene.add( cameraAnchor );
-
-    // Editor camera
-    editorCamera = gameCamera.clone();
-    cameraControls = new THREE.OrbitControls( editorCamera, renderer.domElement );
-    cameraControls.target.set( 0, 0, TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT / 2 );
-    editorCamera.position.set( -250, 350, -250 );
-    cameraControls.update();
-
-    renderCamera = gameCamera;
-
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
     sun.position.set( -20, 20, 15 );
@@ -374,7 +355,6 @@ import Heightmap from './include/classes/heightmap';
     let riverMaterial = new THREE.MeshPhongMaterial( {
       color: 0x2f5d63
     } );
-    let size = TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH;
     let riverMesh = new THREE.PlaneGeometry( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH,
       TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT,
       1, 1 );
@@ -392,6 +372,27 @@ import Heightmap from './include/classes/heightmap';
     scene.add( player );
   };
 
+  let initCameras = function () {
+    // Game camera
+    gameCamera = new THREE.PerspectiveCamera( 15.0, window.innerWidth / window.innerHeight, 100, 10000 );
+    cameraAnchor = new THREE.Object3D();
+    cameraAnchor.position.set( ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2, 0, ( TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) / 2 );
+    cameraAnchor.updateMatrix();
+    cameraAnchor.add( gameCamera );
+    gameCamera.position.set( 100, 250, -300 );
+    gameCamera.lookAt( new THREE.Vector3( 0, 100, 0 ) );
+    scene.add( cameraAnchor );
+
+    // Editor camera
+    editorCamera = gameCamera.clone();
+    cameraControls = new THREE.OrbitControls( editorCamera, renderer.domElement );
+    cameraControls.target.set( 0, 0, TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT / 2 );
+    editorCamera.position.set( -250, 350, -250 );
+    cameraControls.update();
+
+    renderCamera = gameCamera;
+  };
+
   let init = function () {
 
     window.flight = {};
@@ -400,8 +401,9 @@ import Heightmap from './include/classes/heightmap';
 
     initRenderer();
     initScene();
-    initTerrain();
     initPlayer();
+    initCameras();
+    initTerrain();
 
     // Events
     addEvent( window, 'resize', resize );
@@ -446,9 +448,9 @@ import Heightmap from './include/classes/heightmap';
       while ( player.gridPos.y > terrainGridIndex.y ) {
         shiftTerrain( 0, 1 );
       }
-      cameraAnchor.position.set( player.position.x, 0, player.position.z );
       let t = window.flight.time / 10;
-      player.position.set( 0, 100, t * 256 );
+      player.position.set( 64, 100, t * 12800 );
+      cameraAnchor.position.set( player.position.x, 0, player.position.z );
     }
 
     shadowAnchor.position.z = player.position.z;
@@ -462,4 +464,4 @@ import Heightmap from './include/classes/heightmap';
     .then( init )
     .then( idle );
 
-} )();;
+} )();

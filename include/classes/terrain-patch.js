@@ -23,7 +23,7 @@ class TerrainPatch extends THREE.Mesh {
   /**
    * @description Rebuilds the terrain heightmap and scatter geometry.
    */
-  rebuild() {
+  rebuild( scene ) {
     let vertsX = SEGS_X + 1;
     let vertsY = SEGS_Y + 1;
     let v = 0;
@@ -43,6 +43,8 @@ class TerrainPatch extends THREE.Mesh {
     // Regenerate scatter
     this.scatters.forEach( ( v ) => {
       this.remove( v.scatterMesh );
+      scene.remove( v.scatterMesh );
+      v.scatterMesh.geometry.dispose();
       v.scatterMesh = this.createScatterGeometry( v.baseMesh, v.scatterCount );
       this.add( v.scatterMesh );
     } );
