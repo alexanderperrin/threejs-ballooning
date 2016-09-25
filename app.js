@@ -15,51 +15,49 @@ import Heightmap from './include/classes/heightmap';
 
   // Trees
   const TREE_PATCH_SIZE = 64;
-  const TREE_PATCH_COUNT = 128;
   const TREES_PER_PATCH = 128;
   const TREE_NOISE_SIZE = 64;
   const TREE_SCALE = 0.7;
 
-  // Terrain patches
-  const TERRAIN_PATCH_WIDTH = 128;
-  const TERRAIN_PATCH_HEIGHT = 128;
-  const TERRAIN_PATCHES_X = 10;
-  const TERRAIN_PATCHES_Z = 12
-  const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
-  const TERRAIN_OFFSET_Z = 0;
-  const TERRAIN_INDEX_OFFSET_Z = 0;
-
-  // Data file locations
+  // FILE
   const IMAGE_PATH = 'static/images/';
   const MESH_PATH = 'static/meshes/';
-
-  // Meshes to load
   let meshFiles = [
-    'plane.json',
     'tree.json',
     'balloon.json',
   ];
-
-  // Image files to load
   let imageFiles = [];
+  let objectLoader = new THREE.ObjectLoader();
 
+  // DATA STORE
   let meshes = {};
   let textures = {};
 
+  // LIGHTS, CAMERAS & HELPERS
   let renderer,
     scene,
     cameraControls,
     shadowCam,
+    sun,
+    shadowAnchor,
     cameraAnchor,
+    gameCamera,
+    renderCamera,
+    editorCamera,
     clock;
 
-  let objectLoader = new THREE.ObjectLoader();
-
+  // PLAYER
   let player;
 
-  // Terrain stuff
+  // TERRAIN
+  const TERRAIN_PATCH_WIDTH = 128;
+  const TERRAIN_PATCH_HEIGHT = 128;
+  const TERRAIN_PATCHES_X = 10;
+  const TERRAIN_PATCHES_Z = 12;
+  const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
+  const TERRAIN_OFFSET_Z = 0;
+  const TERRAIN_INDEX_OFFSET_Z = 0;
   let noise = new ImprovedNoise();
-
   let heightmap = new Heightmap( {
     noise: noise,
     noiseOffset: {
@@ -69,27 +67,15 @@ import Heightmap from './include/classes/heightmap';
     height: 50,
     scale: 100
   } );
-
+  let terrainPatches = [];
+  let waterPlane;
   // Used for tracking terrain regeneration requirement
   let terrainGridIndex = {
     x: 0,
     y: 0
   };
 
-  let waterPlane;
-
-  let treePatches = [];
-
-  // Directional light
-  let sun;
-  let shadowAnchor;
-
-  // Cameras
-  let gameCamera, renderCamera, editorCamera;
-
-  let terrainPatches = [];
-
-  // Key input
+  // INPUT
   let input = {
     x: 0,
     y: 0
@@ -103,10 +89,22 @@ import Heightmap from './include/classes/heightmap';
     return window.devicePixelRatio || 1;
   };
 
+  /**
+   * Random function
+   * @param  {double} min minimum
+   * @param  {double} max maximum
+   * @return {double} random double between 0 and 1
+   */
   let getRandomArbitrary = function ( min, max ) {
     return Math.random() * ( max - min ) + min;
   };
 
+  /**
+   * Adds an event to the object
+   * @param {object}   object   object to add event to
+   * @param {string}   type     event type
+   * @param {Function} callback event handler
+   */
   let addEvent = function ( object, type, callback ) {
     if ( object === null || typeof ( object ) === 'undefined' ) return;
     if ( object.addEventListener ) {
@@ -146,6 +144,11 @@ import Heightmap from './include/classes/heightmap';
     updateRenderCamera();
   };
 
+  /**
+   * Shifts the terrain by given units
+   * @param  {[type]} x terrain units to shift in x
+   * @param  {[type]} y terrain units to shift in y
+   */
   let shiftTerrain = function ( x, y ) {
     // Shift forward
     for ( let i = 0; i < y; ++i ) {
@@ -163,18 +166,17 @@ import Heightmap from './include/classes/heightmap';
         tp.rebuild();
       }
     }
-    // Shift trees
-    for ( let i = 0; i < treePatches.length; ++i ) {
-      let tp = treePatches[ i ];
-      if ( terrainGridIndex.y > tp.gridPos.y ) {
-        tp.gridPos = worldToTerrainGrid( tp.mesh.position );
-      }
-    }
     terrainGridIndex.x += x;
     terrainGridIndex.y += y;
     waterPlane.position.z += TERRAIN_PATCH_HEIGHT * y;
   };
 
+  /**
+   * Terrain grid index to world position transformation
+   * @param  {int} x terrain index x
+   * @param  {int} y terrain index y
+   * @return {vec3}   world position
+   */
   let terrainGridToWorld = function ( x, y ) {
     return {
       x: x * TERRAIN_PATCH_WIDTH,
@@ -183,6 +185,11 @@ import Heightmap from './include/classes/heightmap';
     };
   };
 
+  /**
+   * World position to terrain grid index transformation
+   * @param  {vec3} pos world position
+   * @return {vec2}     terrain index
+   */
   let worldToTerrainGrid = function ( pos ) {
     return {
       x: Math.round( pos.x / TERRAIN_PATCH_WIDTH ),
@@ -190,6 +197,7 @@ import Heightmap from './include/classes/heightmap';
     };
   };
 
+  /// Gets a random position on the entire landscape
   let getRandomPositionOnLandscape = function () {
     return {
       x: getRandomArbitrary( 0, TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) + TERRAIN_OFFSET_X,
@@ -198,6 +206,7 @@ import Heightmap from './include/classes/heightmap';
     };
   };
 
+  /// Redraw the view
   let render = function () {
     renderer.render( scene, renderCamera );
   };
@@ -211,21 +220,14 @@ import Heightmap from './include/classes/heightmap';
 
     if ( player ) {
       player.gridPos = worldToTerrainGrid( player.position );
-
+      // Check for terrain shift
       while ( player.gridPos.y + TERRAIN_INDEX_OFFSET_Z > terrainGridIndex.y ) {
-        // Shift forward
         shiftTerrain( 0, 1 );
       }
-
-      let pos = terrainGridToWorld( player.gridPos.x, player.gridPos.y );
-
-      cameraAnchor.position.set( player.position.x,
-        0,
-        player.position.z );
+      cameraAnchor.position.set( player.position.x, 0, player.position.z );
+      let t = window.flight.time / 10;
+      player.position.set( 0, 100, t * 256 );
     }
-
-    let t = window.flight.time / 10;
-    player.position.set( 0, 100, t * 256 );
 
     shadowAnchor.position.z = player.position.z;
 
@@ -305,20 +307,6 @@ import Heightmap from './include/classes/heightmap';
     treePatch.castShadow = true;
 
     return treePatch;
-  };
-
-  let spawnTrees = function () {
-    // Spawn tree patches
-    for ( let j = 0; j < TREE_PATCH_COUNT; ++j ) {
-      let treePatch = spawnTreePatch( getRandomPositionOnLandscape() );
-      let patchData = {
-        mesh: treePatch,
-        gridPos: worldToTerrainGrid( treePatch.position )
-      };
-      treePatches.push( patchData );
-      console.log( patchData );
-      scene.add( treePatch );
-    }
   };
 
   let getShader = function ( shaderStr ) {
