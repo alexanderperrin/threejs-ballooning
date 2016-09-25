@@ -49,7 +49,7 @@ import Heightmap from './include/classes/heightmap';
   const TERRAIN_PATCHES_Z = 12;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = -64;
-  const TREES_PER_TERRAIN = 200;
+  const TREES_PER_TERRAIN = 100;
   let heightmap = new Heightmap( {
     noiseOffset: {
       x: -TERRAIN_OFFSET_X,
@@ -368,6 +368,7 @@ import Heightmap from './include/classes/heightmap';
   let initPlayer = function () {
     let obj = meshes[ 'balloon' ];
     player = new Player();
+    player.position.set( 0, 100, 0 );
     player.add( obj );
     scene.add( player );
   };
@@ -448,8 +449,7 @@ import Heightmap from './include/classes/heightmap';
       while ( player.gridPos.y > terrainGridIndex.y ) {
         shiftTerrain( 0, 1 );
       }
-      let t = window.flight.time / 10;
-      player.position.set( 64, 100, t * 12800 );
+      player.position.z += dt * 32;
       cameraAnchor.position.set( player.position.x, 0, player.position.z );
     }
 
