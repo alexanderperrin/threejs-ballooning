@@ -46,7 +46,7 @@ import Heightmap from './include/classes/heightmap';
   const TERRAIN_PATCH_WIDTH = 128;
   const TERRAIN_PATCH_HEIGHT = 128;
   const TERRAIN_PATCHES_X = 3;
-  const TERRAIN_PATCHES_Z = 2;
+  const TERRAIN_PATCHES_Z = 5;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = 0;
   let heightmap = new Heightmap( {
@@ -188,30 +188,6 @@ import Heightmap from './include/classes/heightmap';
   /// Redraw the view
   let render = function () {
     renderer.render( scene, renderCamera );
-  };
-
-  let idle = function () {
-
-    let dt = clock.getDelta();
-    window.flight.deltaTime = dt;
-    window.flight.input = input;
-    window.flight.time = clock.getElapsedTime();
-
-    if ( player ) {
-      player.gridPos = worldToTerrainGrid( player.position );
-      // Check for terrain shift
-      while ( player.gridPos.y > terrainGridIndex.y ) {
-        shiftTerrain( 0, 1 );
-      }
-      cameraAnchor.position.set( player.position.x, 0, player.position.z );
-      let t = window.flight.time / 10;
-      player.position.set( 0, 100, t * 256 );
-    }
-
-    shadowAnchor.position.z = player.position.z;
-
-    requestAnimationFrame( idle );
-    render();
   };
 
   /**
@@ -386,7 +362,7 @@ import Heightmap from './include/classes/heightmap';
         } );
         tp.receiveShadow = true;
         tp.castShadow = true;
-        tp.addScatterObject( meshes[ 'tree' ], 1000 );
+        tp.addScatterObject( meshes[ 'tree' ], 250 );
         terrainPatches[ i ][ j ] = tp;
         scene.add( terrainPatches[ i ][ j ] );
       }
@@ -452,9 +428,34 @@ import Heightmap from './include/classes/heightmap';
     resize();
   };
 
+  let idle = function () {
+
+    let dt = clock.getDelta();
+    window.flight.deltaTime = dt;
+    window.flight.input = input;
+    window.flight.time = clock.getElapsedTime();
+
+    if ( player ) {
+      player.gridPos = worldToTerrainGrid( player.position );
+      player.rotation.set( 0, Math.sin( window.flight.time * 0.2 ), 0 );
+      // Check for terrain shift
+      while ( player.gridPos.y > terrainGridIndex.y ) {
+        shiftTerrain( 0, 1 );
+      }
+      cameraAnchor.position.set( player.position.x, 0, player.position.z );
+      let t = window.flight.time / 10;
+      player.position.set( 0, 100, t * 256 );
+    }
+
+    shadowAnchor.position.z = player.position.z;
+
+    requestAnimationFrame( idle );
+    render();
+  };
+
   loadTextures()
     .then( loadMeshes )
     .then( init )
     .then( idle );
 
-} )();
+} )();;

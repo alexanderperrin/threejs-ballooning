@@ -17,10 +17,12 @@ class TerrainPatch extends THREE.Mesh {
     this.material = opts.hasOwnProperty( 'material' ) ? opts.material : undefined;
     this.verts = null;
     this.geometry = this.createGeometry();
-    this.scatters = {};
+    this.scatters = [];
   }
 
-  /// Rebuild terrain heightmap
+  /**
+   * @description Rebuilds the terrain heightmap and scatter geometry.
+   */
   rebuild() {
     let vertsX = SEGS_X + 1;
     let vertsY = SEGS_Y + 1;
@@ -37,10 +39,36 @@ class TerrainPatch extends THREE.Mesh {
     }
     this.geometry.attributes.position.needsUpdate = true;
     this.geometry.computeVertexNormals();
+
+    // Regenerate scatter
+    this.scatters.forEach( ( v ) => {
+      this.remove( v.scatterMesh );
+      v.scatterMesh = this.createScatterGeometry( v.baseMesh, v.scatterCount );
+      this.add( v.scatterMesh );
+    } );
   }
 
+  /**
+   * @description Adds a mesh to scatter on to the terrain.
+   */
   addScatterObject( mesh, count ) {
 
+    let scatterMesh = this.createScatterGeometry( mesh, count );
+
+    // Store data for terrain to be able to rebuild scatter when regenerated
+    this.scatters.push( {
+      baseMesh: mesh, // The mesh to be scattered
+      scatterMesh: scatterMesh, // The batched scatter mesh
+      scatterCount: count // The amount of scattered meshes
+    } );
+
+    this.add( scatterMesh );
+  }
+
+  /**
+   * @description Creates the scatter geometry mesh.
+   */
+  createScatterGeometry( mesh, count ) {
     let meshGeo = mesh.geometry;
     let vertCount = meshGeo.attributes.position.count;
 
@@ -113,13 +141,13 @@ class TerrainPatch extends THREE.Mesh {
 
     let scatterMesh = new THREE.Mesh( geometry, mesh.material );
     scatterMesh.castShadow = mesh.castShadow;
-    scatterMesh.add( new THREE.BoxHelper( scatterMesh ) );
-
-    this.scatters[ mesh.uuid ] = scatterMesh;
-    this.add( scatterMesh );
+    return scatterMesh;
   }
 
-  /// Get world position on terrain based off normalized XZ coordinates
+  /**
+   * @description Gets an object space position on the landscape based on normalized XZ coordinates.
+   * @returns The position.
+   */
   getPosition( coord ) {
 
     // Clamp coordinates
