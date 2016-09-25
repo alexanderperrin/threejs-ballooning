@@ -6,9 +6,9 @@ const MAX_BANK = 0.6;
 const BANK_SPEED = 0.5;
 const MAX_BANK_VEL = 1;
 
-class Player extends THREE.Mesh {
+class Player extends THREE.Object3D {
   constructor( geometry, material ) {
-    super( geometry, material );
+    super();
     this.velocity = new THREE.Vector3();
     this.bankVelocity = 0.0;
     this.gridPos = {

@@ -5,7 +5,6 @@ import ImprovedNoise from './include/ImprovedNoise';
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
-import Zlib from 'zlibjs';
 
 ( function () {
 
@@ -38,11 +37,11 @@ import Zlib from 'zlibjs';
   let meshFiles = [
     'plane.json',
     'tree.json',
+    'balloon.json',
   ];
 
   // Image files to load
-  let imageFiles = [
-  ];
+  let imageFiles = [];
 
   let meshes = {};
   let textures = {};
@@ -220,13 +219,13 @@ import Zlib from 'zlibjs';
 
       let pos = terrainGridToWorld( player.gridPos.x, player.gridPos.y );
 
-      cameraAnchor.position.set( player.position.x + 100,
+      cameraAnchor.position.set( player.position.x,
         0,
-        player.position.z + 100 );
+        player.position.z );
     }
 
     let t = window.flight.time / 10;
-    player.position.set( 0, 10, t * 1024 );
+    player.position.set( 0, 100, t * 256 );
 
     shadowAnchor.position.z = player.position.z;
 
@@ -400,13 +399,13 @@ import Zlib from 'zlibjs';
     scene.add( axisHelper );
 
     // Game camera
-    gameCamera = new THREE.PerspectiveCamera( 25.0, window.innerWidth / window.innerHeight, 100, 10000 );
+    gameCamera = new THREE.PerspectiveCamera( 15.0, window.innerWidth / window.innerHeight, 100, 10000 );
     cameraAnchor = new THREE.Object3D();
     cameraAnchor.position.set( ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2, 0, ( TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) / 2 );
     cameraAnchor.updateMatrix();
     cameraAnchor.add( gameCamera );
-    gameCamera.position.set( 350, 270, -500 );
-    gameCamera.lookAt( new THREE.Vector3( 0, 50, 50 ) );
+    gameCamera.position.set( 100, 250, -300 );
+    gameCamera.lookAt( new THREE.Vector3( 0, 100, 0 ) );
     scene.add( cameraAnchor );
 
     // Editor camera
@@ -515,10 +514,10 @@ import Zlib from 'zlibjs';
     scene.add( hemiLight );
 
     // Player
-    let obj = meshes[ 'plane' ];
-    player = new Player( obj.geometry, obj.material );
+    let obj = meshes[ 'balloon' ];
+    player = new Player();
+    player.add( obj );
     scene.add( player );
-    player.castShadow = true;
 
     spawnTrees();
 
