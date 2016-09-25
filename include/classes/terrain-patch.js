@@ -3,7 +3,6 @@ import Mathf from './mathf';
 const SEGS_X = 16;
 const SEGS_Y = 16;
 const VERTS_X = SEGS_X + 1;
-const VERTS_Y = SEGS_Y + 1;
 
 class TerrainPatch extends THREE.Mesh {
 
@@ -18,6 +17,7 @@ class TerrainPatch extends THREE.Mesh {
     this.material = opts.hasOwnProperty( 'material' ) ? opts.material : undefined;
     this.verts = null;
     this.geometry = this.createGeometry();
+    this.scatters = {};
   }
 
   /// Rebuild terrain heightmap
@@ -37,6 +37,86 @@ class TerrainPatch extends THREE.Mesh {
     }
     this.geometry.attributes.position.needsUpdate = true;
     this.geometry.computeVertexNormals();
+  }
+
+  addScatterObject( mesh, count ) {
+
+    let meshGeo = mesh.geometry;
+    let vertCount = meshGeo.attributes.position.count;
+
+    let matrix = new THREE.Matrix4();
+    let rotation = new THREE.Quaternion();
+    let position = new THREE.Vector3();
+    let scale = new THREE.Vector3();
+
+    // Scatter geometry
+    let geometry = new THREE.BufferGeometry();
+
+    // Vertex positions
+    let posAttrib = new THREE.Float32Attribute(
+      new Float32Array( vertCount * meshGeo.attributes.position.itemSize * count ),
+      meshGeo.attributes.position.itemSize
+    );
+
+    // Vertex normals
+    let normAttrib = new THREE.Float32Attribute(
+      new Float32Array( vertCount * meshGeo.attributes.position.itemSize * count ),
+      meshGeo.attributes.position.itemSize
+    );
+
+    // Vertex colours
+    let colorAttrib = new THREE.Float32Attribute(
+      new Float32Array( vertCount * meshGeo.attributes.color.itemSize * count ),
+      meshGeo.attributes.color.itemSize
+    );
+
+    geometry.addAttribute( 'position', posAttrib );
+    geometry.addAttribute( 'normal', normAttrib );
+    geometry.addAttribute( 'color', colorAttrib );
+
+    let width;
+    let sway = 0.05;
+
+    // Create individual objects for the scatter
+    for ( let i = 0; i < count; ++i ) {
+
+      let coord = {
+        x: Mathf.randRange( 0, 1 ),
+        y: Mathf.randRange( 0, 1 )
+      };
+
+      let pos = this.getPosition( coord );
+
+      // Min height for spawn
+      if ( pos.y < -10 ) {
+        continue;
+      }
+
+      position.set( pos.x, pos.y, pos.z );
+
+      rotation.setFromEuler(
+        new THREE.Euler(
+          Mathf.randRange( -sway, sway ),
+          Mathf.randRange( 0, Math.PI * 2 ),
+          Mathf.randRange( -sway, sway ),
+          THREE.Euler.DefaultOrder
+        )
+      );
+
+      width = Mathf.randRange( 0.25, 0.5 );
+      scale.set( width, 0.5, width );
+      matrix.compose( position, rotation, scale );
+      meshGeo.applyMatrix( matrix );
+      geometry.merge( meshGeo, i * vertCount );
+      meshGeo.applyMatrix( matrix.getInverse( matrix ) );
+    }
+
+    let scatterMesh = new THREE.Mesh( geometry, mesh.material );
+    scatterMesh.castShadow = mesh.castShadow;
+    scatterMesh.add( new THREE.BoxHelper( scatterMesh ) );
+
+    this.scatters[ mesh.uuid ] = scatterMesh;
+    this.add( scatterMesh );
   }
 
   /// Get world position on terrain based off normalized XZ coordinates
@@ -67,9 +147,9 @@ class TerrainPatch extends THREE.Mesh {
     h = Mathf.lerp( h1, h2, ry1 );
 
     return {
-      x: coord.x * this.width + this.position.x, //this.verts[ index * 3 ] + this.position.x,
-      y: h, //this.verts[ index * 3 + 1 ] + this.position.y,
-      z: coord.y * this.height + this.position.z //this.verts[ index * 3 + 2 ] + this.position.z,
+      x: coord.x * this.width,
+      y: h,
+      z: coord.y * this.height
     };
   }
 

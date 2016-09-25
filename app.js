@@ -1,7 +1,6 @@
 require( './node_modules\/three\/src\/loaders\/ObjectLoader' );
 require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
 
-import ImprovedNoise from './include/ImprovedNoise';
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
@@ -13,13 +12,7 @@ import Heightmap from './include/classes/heightmap';
   const SHADOW_MAP_HEIGHT = 512;
   const SHADOW_CAM_SIZE = 512;
 
-  // Trees
-  const TREE_PATCH_SIZE = 64;
-  const TREES_PER_PATCH = 128;
-  const TREE_NOISE_SIZE = 64;
-  const TREE_SCALE = 0.7;
-
-  // FILE
+  // File
   const IMAGE_PATH = 'static/images/';
   const MESH_PATH = 'static/meshes/';
   let meshFiles = [
@@ -29,11 +22,11 @@ import Heightmap from './include/classes/heightmap';
   let imageFiles = [];
   let objectLoader = new THREE.ObjectLoader();
 
-  // DATA STORE
+  // Data storage
   let meshes = {};
   let textures = {};
 
-  // LIGHTS, CAMERAS & HELPERS
+  // Lights, camera and helpers
   let renderer,
     scene,
     cameraControls,
@@ -46,20 +39,17 @@ import Heightmap from './include/classes/heightmap';
     editorCamera,
     clock;
 
-  // PLAYER
+  // Player
   let player;
 
-  // TERRAIN
+  // Terrain
   const TERRAIN_PATCH_WIDTH = 128;
   const TERRAIN_PATCH_HEIGHT = 128;
-  const TERRAIN_PATCHES_X = 10;
-  const TERRAIN_PATCHES_Z = 12;
+  const TERRAIN_PATCHES_X = 3;
+  const TERRAIN_PATCHES_Z = 2;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = 0;
-  const TERRAIN_INDEX_OFFSET_Z = 0;
-  let noise = new ImprovedNoise();
   let heightmap = new Heightmap( {
-    noise: noise,
     noiseOffset: {
       x: -TERRAIN_OFFSET_X,
       y: -TERRAIN_OFFSET_Z
@@ -69,13 +59,12 @@ import Heightmap from './include/classes/heightmap';
   } );
   let terrainPatches = [];
   let waterPlane;
-  // Used for tracking terrain regeneration requirement
   let terrainGridIndex = {
     x: 0,
     y: 0
-  };
+  }; // Used for tracking terrain regeneration requirement
 
-  // INPUT
+  // Input
   let input = {
     x: 0,
     y: 0
@@ -87,16 +76,6 @@ import Heightmap from './include/classes/heightmap';
    */
   let getDevicePixelRatio = function () {
     return window.devicePixelRatio || 1;
-  };
-
-  /**
-   * Random function
-   * @param  {double} min minimum
-   * @param  {double} max maximum
-   * @return {double} random double between 0 and 1
-   */
-  let getRandomArbitrary = function ( min, max ) {
-    return Math.random() * ( max - min ) + min;
   };
 
   /**
@@ -221,7 +200,7 @@ import Heightmap from './include/classes/heightmap';
     if ( player ) {
       player.gridPos = worldToTerrainGrid( player.position );
       // Check for terrain shift
-      while ( player.gridPos.y + TERRAIN_INDEX_OFFSET_Z > terrainGridIndex.y ) {
+      while ( player.gridPos.y > terrainGridIndex.y ) {
         shiftTerrain( 0, 1 );
       }
       cameraAnchor.position.set( player.position.x, 0, player.position.z );
@@ -235,80 +214,11 @@ import Heightmap from './include/classes/heightmap';
     render();
   };
 
-  let spawnTreePatch = function ( patchPos ) {
-
-    let mesh = meshes[ 'tree' ];
-    let meshGeo = mesh.geometry;
-    let vertCount = meshGeo.attributes.position.count;
-
-    let matrix = new THREE.Matrix4();
-    let rotation = new THREE.Quaternion();
-    let position = new THREE.Vector3();
-    let scale = new THREE.Vector3();
-
-    // Tree patch geometry
-    let treePatchGeo = new THREE.BufferGeometry();
-    // Vertex positions
-    let posAttrib = new THREE.Float32Attribute(
-      new Float32Array( vertCount * meshGeo.attributes.position.itemSize * TREES_PER_PATCH ),
-      meshGeo.attributes.position.itemSize
-    );
-    // Vertex normals
-    let normAttrib = new THREE.Float32Attribute(
-      new Float32Array( vertCount * meshGeo.attributes.position.itemSize * TREES_PER_PATCH ),
-      meshGeo.attributes.position.itemSize
-    );
-    // Vertex colours
-    let colorAttrib = new THREE.Float32Attribute(
-      new Float32Array( vertCount * meshGeo.attributes.color.itemSize * TREES_PER_PATCH ),
-      meshGeo.attributes.color.itemSize
-    );
-    treePatchGeo.addAttribute( 'position', posAttrib );
-    treePatchGeo.addAttribute( 'normal', normAttrib );
-    treePatchGeo.addAttribute( 'color', colorAttrib );
-
-    // Create individual trees for the patch
-    let angle, dist, width, posX, posZ, posY, noiseTimeX, noiseTimeZ, noiseScale, sway;
-    for ( let i = 0; i < TREES_PER_PATCH; ++i ) {
-      angle = getRandomArbitrary( 0, 2 * Math.PI );
-
-      // Distance from center of tree patch
-      dist = Math.sqrt( getRandomArbitrary( 0, 1 ) ) * TREE_PATCH_SIZE;
-      width = getRandomArbitrary( 0.5, 1 );
-      posX = Math.sin( angle ) * dist;
-      posZ = Math.cos( angle ) * dist;
-
-      // Perlin noise for scale modulation
-      noiseScale = noise.noise(
-        patchPos.x + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_X,
-        0,
-        patchPos.z + posX / TREE_NOISE_SIZE - TERRAIN_OFFSET_Z
-      ) + 0.5;
-      sway = 0.05;
-      posY = heightmap.getHeight( posX + patchPos.x, posZ + patchPos.z );
-      position.set( posX, posY, posZ );
-      rotation.setFromEuler(
-        new THREE.Euler(
-          getRandomArbitrary( -sway, sway ),
-          getRandomArbitrary( 0, Math.PI * 2 ),
-          getRandomArbitrary( -sway, sway ),
-          THREE.Euler.DefaultOrder
-        )
-      );
-      scale.set( width * TREE_SCALE, ( noiseScale ) * TREE_SCALE, width * TREE_SCALE );
-      matrix.compose( position, rotation, scale );
-      meshGeo.applyMatrix( matrix );
-      treePatchGeo.merge( meshGeo, i * vertCount );
-      meshGeo.applyMatrix( matrix.getInverse( matrix ) );
-    }
-
-    let treePatch = new THREE.Mesh( treePatchGeo, mesh.material );
-    treePatch.position.set( patchPos.x, patchPos.y, patchPos.z );
-    treePatch.castShadow = true;
-
-    return treePatch;
-  };
-
+  /**
+   * Parses a shader from the THREE shader chunk library
+   * @param  {[type]} shaderStr [description]
+   * @return {[type]}           [description]
+   */
   let getShader = function ( shaderStr ) {
     return shaderStr.replace( /#include\s+(\S+)/gi, function ( match, p1 ) {
       p1 = p1.substr( 1, p1.length - 2 );
@@ -404,7 +314,7 @@ import Heightmap from './include/classes/heightmap';
     scene.add( shadowAnchor );
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
-    scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1650 );
+    // scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1650 );
     let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
     hemiLight.position.set( 0, 500, 0 );
     scene.add( hemiLight );
@@ -476,6 +386,7 @@ import Heightmap from './include/classes/heightmap';
         } );
         tp.receiveShadow = true;
         tp.castShadow = true;
+        tp.addScatterObject( meshes[ 'tree' ], 1000 );
         terrainPatches[ i ][ j ] = tp;
         scene.add( terrainPatches[ i ][ j ] );
       }

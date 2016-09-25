@@ -1,9 +1,9 @@
 import ImprovedNoise from '../ImprovedNoise';
 
 class Heightmap {
+
   constructor( opts ) {
-    console.log( opts );
-    this.noise = opts.hasOwnProperty( 'noise' ) ? opts.noise : new ImprovedNoise();
+    this.noise = new ImprovedNoise();
     this.scale = opts.hasOwnProperty( 'scale' ) ? opts.scale : 100;
     this.height = opts.hasOwnProperty( 'height' ) ? opts.height : 0;
     this.noiseOffset = opts.hasOwnProperty( 'noiseOffset' ) ? opts.noiseOffset : 0;
