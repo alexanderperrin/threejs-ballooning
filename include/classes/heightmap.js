@@ -4,7 +4,7 @@ const VALLEY_01_SCALE = 0.035;
 const VALLEY_02_SCALE = 0.01;
 const VALLEY_01_MULT = 1.0;
 const VALLEY_02_MULT = 0.5;
-const HEIGHT_MULT = 5.0;
+const HEIGHT_MULT = 10.0;
 const RIVER_WIDTH = 100.0;
 
 class Heightmap {

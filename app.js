@@ -49,7 +49,7 @@ import Heightmap from './include/classes/heightmap';
   const TERRAIN_PATCHES_Z = 12;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = -64;
-  const TREES_PER_TERRAIN = 100;
+  const TREES_PER_TERRAIN = 150;
   let heightmap = new Heightmap( {
     noiseOffset: {
       x: -TERRAIN_OFFSET_X,
