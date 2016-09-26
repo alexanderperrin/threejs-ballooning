@@ -142,7 +142,7 @@ class TerrainPatch extends THREE.Mesh {
     }
 
     let scatterMesh = new THREE.Mesh( geometry, mesh.material );
-    scatterMesh.castShadow = mesh.castShadow;
+    scatterMesh.castShadow = true; // mesh.castShadow;
     return scatterMesh;
   }
 
@@ -207,6 +207,12 @@ class TerrainPatch extends THREE.Mesh {
           pos.z + this.position.z
         );
         pos.y = noise;
+        if ( pos.y < -15 ) {
+          let helper = new THREE.AxisHelper( 10 );
+          helper.position.set( pos.x + this.position.x, -15, pos.z + this.position.z );
+          window.flight.scene.add( helper );
+          console.log( 'hello?' );
+        }
         this.verts[ v ] = pos.x;
         this.verts[ v + 1 ] = pos.y;
         this.verts[ v + 2 ] = pos.z;

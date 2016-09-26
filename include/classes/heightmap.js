@@ -4,7 +4,7 @@ const VALLEY_01_SCALE = 0.035;
 const VALLEY_02_SCALE = 0.01;
 const VALLEY_01_MULT = 1.0;
 const VALLEY_02_MULT = 0.5;
-const HEIGHT_MULT = 5.0;
+const HEIGHT_MULT = 10.0;
 const RIVER_WIDTH = 100.0;
 
 class Heightmap {
@@ -28,10 +28,10 @@ class Heightmap {
 
   getHeight( x, y ) {
     let n1 = this.clamp( this.perlinNoise( x, y, 0.5 ) + 0.2, 0, 1 );
-    let n2 = this.perlinNoise( x, y, 2 ) + 0.2;
-    let height = this.lerp( n1, n2, 0.2 );
+    let n2 = this.perlinNoise( x, y, 2 );
+    let height = n1 + n2;
     height *= this.clamp( Math.pow( height + 0.5, 5 ), 0, 1 );
-    height = this.lerp( height, this.step( height, 6 ), this.perlinNoise( x, 0.2, 10 ) );
+    height = this.lerp( height, this.step( height, 5 ), this.perlinNoise( x, 0.2, 1 ) );
     height *= 0.3;
     height *= Math.pow( Math.abs( VALLEY_01_SCALE * x ), 2 ) * VALLEY_01_MULT + 0.5;
     height += Math.pow( Math.abs( VALLEY_02_SCALE * x ), 2 ) * VALLEY_02_MULT;
@@ -56,4 +56,4 @@ class Heightmap {
   }
 }
 
-export default Heightmap;
+export default Heightmap;;

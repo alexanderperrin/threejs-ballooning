@@ -8,18 +8,20 @@ import Heightmap from './include/classes/heightmap';
 ( function () {
 
   // Rendering
-  const SHADOW_MAP_WIDTH = 512;
-  const SHADOW_MAP_HEIGHT = 512;
-  const SHADOW_CAM_SIZE = 512;
+  const SHADOW_MAP_WIDTH = 1024;
+  const SHADOW_MAP_HEIGHT = 1024;
+  const SHADOW_CAM_SIZE = 256;
 
   // File
   const IMAGE_PATH = 'static/images/';
   const MESH_PATH = 'static/meshes/';
+
   let meshFiles = [
     'tree.json',
     'balloon.json',
   ];
   let imageFiles = [];
+
   let objectLoader = new THREE.ObjectLoader();
 
   // Data storage
@@ -224,6 +226,9 @@ import Heightmap from './include/classes/heightmap';
     } );
   };
 
+  /**
+   * Loads the textures specified in the textures URL array.
+   */
   let loadTextures = function () {
     return new Promise( function ( resolve ) {
       let numFiles = imageFiles.length;
@@ -248,6 +253,10 @@ import Heightmap from './include/classes/heightmap';
     } );
   };
 
+  /**
+   * Initialises the THREE WebGL renderer and appends to DOM.
+   * @return {[type]} [description]
+   */
   let initRenderer = function () {
     renderer = new THREE.WebGLRenderer( {
       antialias: false
@@ -258,6 +267,9 @@ import Heightmap from './include/classes/heightmap';
     document.getElementById( 'container' ).appendChild( renderer.domElement );
   };
 
+  /**
+   * Initialises the base scene objects and helpers.
+   */
   let initScene = function () {
 
     scene = new THREE.Scene();
@@ -267,19 +279,19 @@ import Heightmap from './include/classes/heightmap';
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    sun.position.set( -20, 20, 15 );
+    sun.position.set( 20, 50, 45 );
     shadowAnchor = new THREE.Object3D();
     shadowAnchor.add( sun.shadow.camera );
     scene.add( shadowAnchor );
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
-    scene.fog = new THREE.Fog( 0xfeFFe5, 350, 1000 );
+    scene.fog = new THREE.Fog( 0xdaf0fb, 350, 950 );
     let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
     hemiLight.position.set( 0, 500, 0 );
     scene.add( hemiLight );
 
     // Shadows
-    sun.castShadow = false;
+    sun.castShadow = true;
     sun.shadow.mapSize.width = SHADOW_MAP_WIDTH;
     sun.shadow.mapSize.height = SHADOW_MAP_HEIGHT;
     let sCamSize = SHADOW_CAM_SIZE;
@@ -291,6 +303,8 @@ import Heightmap from './include/classes/heightmap';
     sun.shadow.camera.near = -512;
     sun.shadow.bias = -0.001;
     shadowCam = sun.shadow.camera;
+
+    window.flight.scene = scene;
   };
 
   let initTerrain = function () {
@@ -399,6 +413,7 @@ import Heightmap from './include/classes/heightmap';
     window.flight = {};
     clock = new THREE.Clock( true );
     window.flight.clock = clock;
+    window.flight.input = 0;
 
     initRenderer();
     initScene();
@@ -443,13 +458,12 @@ import Heightmap from './include/classes/heightmap';
     window.flight.time = clock.getElapsedTime();
 
     if ( player ) {
+      player.update();
       player.gridPos = worldToTerrainGrid( player.position );
-      player.rotation.set( 0, Math.sin( window.flight.time * 0.2 ), 0 );
       // Check for terrain shift
       while ( player.gridPos.y > terrainGridIndex.y ) {
         shiftTerrain( 0, 1 );
       }
-      player.position.z += dt * 32;
       cameraAnchor.position.set( player.position.x, 0, player.position.z );
     }
 
