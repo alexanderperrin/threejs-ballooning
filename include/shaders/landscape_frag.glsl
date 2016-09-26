@@ -2,6 +2,7 @@
 
 uniform vec3 cliffColor;
 uniform vec3 grassColor;
+uniform vec3 sandColor;
 uniform vec3 emissive;
 uniform vec3 specular;
 uniform float shininess;
@@ -9,8 +10,10 @@ uniform float opacity;
 uniform float steps;
 uniform float threshold;
 uniform sampler2D map;
+uniform float waterHeight;
 
 varying vec3 vWorldNormal;
+varying vec3 vWorldPos;
 
 #include <common>
 #include <packing>
@@ -39,7 +42,8 @@ void main() {
 	#include <clipping_planes_fragment>
 
 	float y = floor((vWorldNormal.y) * steps + threshold) / steps;
-	vec3 c = mix(cliffColor, grassColor, y);
+	vec3 c = mix(sandColor, grassColor, clamp(vWorldPos.y - waterHeight, 0.0, 1.0));
+	c = mix(cliffColor, c, y);
 	vec4 diffuseColor = vec4( c, opacity );
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 	vec3 totalEmissiveRadiance = emissive;

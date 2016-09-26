@@ -133,8 +133,12 @@ class TerrainPatch extends THREE.Mesh {
         )
       );
 
+      let pScale = Mathf.lerp( 0.5, 1.0,
+        this.heightmap.perlinNoise( pos.x + this.position.x, pos.z + this.position.z, 3 )
+      );
+
       width = Mathf.randRange( 0.25, 0.5 );
-      scale.set( width, 0.5, width );
+      scale.set( width * pScale, 0.5 * pScale, width * pScale );
       matrix.compose( position, rotation, scale );
       meshGeo.applyMatrix( matrix );
       geometry.merge( meshGeo, i * vertCount );

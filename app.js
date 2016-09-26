@@ -51,7 +51,7 @@ import Heightmap from './include/classes/heightmap';
   const TERRAIN_PATCHES_Z = 12;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
   const TERRAIN_OFFSET_Z = -64;
-  const TREES_PER_TERRAIN = 100;
+  const TREES_PER_TERRAIN = 150;
   let heightmap = new Heightmap( {
     noiseOffset: {
       x: -TERRAIN_OFFSET_X,
@@ -319,9 +319,17 @@ import Heightmap from './include/classes/heightmap';
         type: 'c',
         value: new THREE.Color( 0x475905 )
       },
+      sandColor: {
+        type: 'c',
+        value: new THREE.Color( 0x886633 )
+      },
       steps: {
         type: 'f',
         value: 1.0
+      },
+      waterHeight: {
+        type: 'f',
+        value: WATER_HEIGHT + 1
       },
       threshold: {
         type: 'f',
