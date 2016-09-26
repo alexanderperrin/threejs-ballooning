@@ -2,6 +2,7 @@
 
 varying vec3 vViewPosition;
 varying vec3 vWorldNormal;
+varying vec3 vWorldPos;
 
 #ifndef FLAT_SHADED
 
@@ -43,5 +44,7 @@ void main() {
 	#include <worldpos_vertex>
 	#include <envmap_vertex>
 	#include <shadowmap_vertex>
+
+	vWorldPos = worldPosition.xyz;
 
 }

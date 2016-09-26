@@ -305,9 +305,17 @@ import Heightmap from './include/classes/heightmap';
         type: 'c',
         value: new THREE.Color( 0x475905 )
       },
+      sandColor: {
+        type: 'c',
+        value: new THREE.Color( 0x886633 )
+      },
       steps: {
         type: 'f',
         value: 1.0
+      },
+      waterHeight: {
+        type: 'f',
+        value: WATER_HEIGHT + 1
       },
       threshold: {
         type: 'f',
