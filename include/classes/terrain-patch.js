@@ -152,7 +152,7 @@ class TerrainPatch extends THREE.Mesh {
 
   /**
    * @description Gets an object space position on the landscape based on normalized XZ coordinates.
-   * @returns The position.
+   * @returns {Vector3} The position.
    */
   getPosition( coord ) {
 
@@ -187,7 +187,30 @@ class TerrainPatch extends THREE.Mesh {
     };
   }
 
-  /// Create terrain geometry structure
+  /**
+   * Gets the normal of the terrain at the given normalized XY coordinates.
+   * @return {Vector3} The normal.
+   */
+  getNormal( coord ) {
+    // Clamp coordinates
+    coord.x = coord.x > 1.0 ? 1.0 : coord.x < 0.0 ? 0.0 : coord.x;
+    coord.y = coord.y > 1.0 ? 1.0 : coord.y < 0.0 ? 0.0 : coord.y;
+
+    // Base vertex index
+    let ix1 = Math.floor( coord.x * SEGS_X );
+    let iy1 = Math.floor( coord.y * SEGS_Y );
+
+    let i1 = VERTS_X * iy1 + ix1; // Bottom left
+    let i2 = i1 + 1; // Bottom right
+    let i3 = i1 + VERTS_X; // Top left
+    let i4 = i3 + 1; // Top right
+
+    return new THREE.Vector3();
+  }
+
+  /**
+   * Creates terrain geometry data and heightmap.
+   */
   createGeometry() {
     let geo = new THREE.BufferGeometry();
     let vertsX = SEGS_X + 1;
@@ -215,7 +238,6 @@ class TerrainPatch extends THREE.Mesh {
           let helper = new THREE.AxisHelper( 10 );
           helper.position.set( pos.x + this.position.x, -15, pos.z + this.position.z );
           window.flight.scene.add( helper );
-          console.log( 'hello?' );
         }
         this.verts[ v ] = pos.x;
         this.verts[ v + 1 ] = pos.y;
