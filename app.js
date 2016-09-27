@@ -10,7 +10,7 @@ import Heightmap from './include/classes/heightmap';
   // Rendering
   const SHADOW_MAP_WIDTH = 1024;
   const SHADOW_MAP_HEIGHT = 1024;
-  const SHADOW_CAM_SIZE = 256;
+  const SHADOW_CAM_SIZE = 512;
 
   // File
   const IMAGE_PATH = 'static/images/';
@@ -264,7 +264,7 @@ import Heightmap from './include/classes/heightmap';
     renderer.setClearColor( 0x000000, 1 );
     renderer.shadowMap.enabled = true;
     console.log( renderer.shadowMap );
-    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.autoUpdate = true;
     renderer.shadowMap.needsUpdate = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById( 'container' ).appendChild( renderer.domElement );
@@ -282,7 +282,7 @@ import Heightmap from './include/classes/heightmap';
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    sun.position.set( 20, 50, 45 );
+    sun.position.set( 100, 150, 200 );
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
     // scene.fog = new THREE.Fog( 0xdaf0fb, 350, 950 );
@@ -295,17 +295,17 @@ import Heightmap from './include/classes/heightmap';
     sun.shadow.mapSize.width = SHADOW_MAP_WIDTH;
     sun.shadow.mapSize.height = SHADOW_MAP_HEIGHT;
     let sCamSize = SHADOW_CAM_SIZE;
-    sun.shadow.camera.right = -sCamSize;
-    sun.shadow.camera.left = sCamSize;
-    sun.shadow.camera.top = sCamSize - sCamSize / 2;
-    sun.shadow.camera.bottom = -sCamSize - sCamSize / 2;
-    sun.shadow.camera.far = 512;
-    sun.shadow.camera.near = -512;
+    sun.shadow.camera.right = -sCamSize / 2;
+    sun.shadow.camera.left = sCamSize / 2;
+    sun.shadow.camera.top = sCamSize / 2;
+    sun.shadow.camera.bottom = -sCamSize / 2;
+    sun.shadow.camera.far = 1024;
+    sun.shadow.camera.near = 0;
     sun.shadow.bias = -0.0025;
-    console.log( sun );
-    shadowCam = sun.shadow.camera;
 
+    scene.add( sun.target );
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
+    scene.add( new THREE.DirectionalLightHelper( sun ) );
 
     window.flight.scene = scene;
   };
@@ -467,6 +467,9 @@ import Heightmap from './include/classes/heightmap';
     window.flight.deltaTime = dt;
     window.flight.input = input;
     window.flight.time = clock.getElapsedTime();
+
+    sun.target.position.z += 16 * dt;
+    sun.position.z += 16 * dt;
 
     if ( player ) {
       player.update();
