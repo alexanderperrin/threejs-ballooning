@@ -215,7 +215,6 @@ class TerrainPatch extends THREE.Mesh {
           let helper = new THREE.AxisHelper( 10 );
           helper.position.set( pos.x + this.position.x, -15, pos.z + this.position.z );
           window.flight.scene.add( helper );
-          console.log( 'hello?' );
         }
         this.verts[ v ] = pos.x;
         this.verts[ v + 1 ] = pos.y;

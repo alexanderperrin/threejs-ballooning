@@ -34,7 +34,6 @@ import Heightmap from './include/classes/heightmap';
     cameraControls,
     shadowCam,
     sun,
-    shadowAnchor,
     cameraAnchor,
     gameCamera,
     renderCamera,
@@ -262,8 +261,11 @@ import Heightmap from './include/classes/heightmap';
     renderer = new THREE.WebGLRenderer( {
       antialias: false
     } );
-    renderer.setClearColor( 0xF9FFE5, 1 );
+    renderer.setClearColor( 0x000000, 1 );
     renderer.shadowMap.enabled = true;
+    console.log( renderer.shadowMap );
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById( 'container' ).appendChild( renderer.domElement );
   };
@@ -281,12 +283,9 @@ import Heightmap from './include/classes/heightmap';
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
     sun.position.set( 20, 50, 45 );
-    shadowAnchor = new THREE.Object3D();
-    shadowAnchor.add( sun.shadow.camera );
-    scene.add( shadowAnchor );
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
     scene.add( sun );
-    scene.fog = new THREE.Fog( 0xdaf0fb, 350, 950 );
+    // scene.fog = new THREE.Fog( 0xdaf0fb, 350, 950 );
     let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
     hemiLight.position.set( 0, 500, 0 );
     scene.add( hemiLight );
@@ -302,8 +301,11 @@ import Heightmap from './include/classes/heightmap';
     sun.shadow.camera.bottom = -sCamSize - sCamSize / 2;
     sun.shadow.camera.far = 512;
     sun.shadow.camera.near = -512;
-    sun.shadow.bias = -0.001;
+    sun.shadow.bias = -0.0025;
+    console.log( sun );
     shadowCam = sun.shadow.camera;
+
+    scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
 
     window.flight.scene = scene;
   };
@@ -475,8 +477,6 @@ import Heightmap from './include/classes/heightmap';
       }
       cameraAnchor.position.set( player.position.x, 0, player.position.z );
     }
-
-    shadowAnchor.position.z = player.position.z;
 
     requestAnimationFrame( idle );
     render();
