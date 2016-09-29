@@ -37,7 +37,7 @@ class Player extends THREE.Object3D {
     this.velocity.x -= this.velocity.x * dt * 0.3;
 
     // Move forward
-    this.position.z += dt * 8;
+    this.position.z += dt * FLIGHT_SPEED;
 
     // Bank
     this.bankVelocity += input.x * BANK_SPEED * dt;
