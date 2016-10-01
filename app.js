@@ -263,7 +263,7 @@ import Heightmap from './include/classes/heightmap';
     renderer = new THREE.WebGLRenderer( {
       antialias: false
     } );
-    renderer.setClearColor( 0x000000, 1 );
+    renderer.setClearColor( 0xFFFFFF, 1 );
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.needsUpdate = true;
@@ -303,6 +303,8 @@ import Heightmap from './include/classes/heightmap';
     let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
     hemiLight.position.set( 0, 500, 0 );
     scene.add( hemiLight );
+
+    scene.add( new THREE.AxisHelper( 32 ) );
 
     // Shadows
     sun.castShadow = true;
@@ -350,6 +352,10 @@ import Heightmap from './include/classes/heightmap';
       waterHeight: {
         type: 'f',
         value: WATER_HEIGHT + 0.5
+      },
+      xFogColor: {
+        type: 'c',
+        value: new THREE.Color( 0xFFFFFF )
       },
       threshold: {
         type: 'f',
@@ -466,6 +472,22 @@ import Heightmap from './include/classes/heightmap';
           renderCamera = editorCamera;
         }
       }
+    } );
+
+    addEvent( window, 'touchstart', function ( e ) {
+      let mp = window.innerWidth / 2;
+      let p = e.touches[ 0 ].clientX;
+      if ( p - mp < 0 ) {
+        // Go left
+        input.x = -1;
+      } else if ( p - mp > 0 ) {
+        // Go right
+        input.x = 1;
+      }
+    } );
+
+    addEvent( window, 'touchend', function () {
+      input.x = 0;
     } );
 
     addEvent( window, 'keyup', function ( e ) {

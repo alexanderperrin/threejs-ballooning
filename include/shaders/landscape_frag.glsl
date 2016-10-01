@@ -5,12 +5,14 @@ uniform vec3 grassColor;
 uniform vec3 sandColor;
 uniform vec3 emissive;
 uniform vec3 specular;
+uniform vec3 xFogColor;
 uniform float shininess;
 uniform float opacity;
 uniform float steps;
 uniform float threshold;
 uniform sampler2D map;
 uniform float waterHeight;
+
 
 varying vec3 vWorldNormal;
 varying vec3 vWorldPos;
@@ -78,4 +80,6 @@ void main() {
 	#include <encodings_fragment>
 	#include <fog_fragment>
 
+	c = gl_FragColor.rgb;
+	gl_FragColor = mix(vec4(c, 1), vec4(xFogColor, 1), clamp((abs(vWorldPos.x) - 128.0) / 32.0, 0.0, 1.0));
 }
