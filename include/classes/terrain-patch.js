@@ -17,6 +17,8 @@ class TerrainPatch extends THREE.Mesh {
     this.material = opts.hasOwnProperty( 'material' ) ? opts.material : undefined;
     this.verts = null;
     this.geometry = this.createGeometry();
+    this.geometry.computeBoundingBox();
+    this.geometry.computeBoundingSphere();
     this.scatters = [];
   }
 
@@ -39,6 +41,8 @@ class TerrainPatch extends THREE.Mesh {
     }
     this.geometry.attributes.position.needsUpdate = true;
     this.geometry.computeVertexNormals();
+    this.geometry.computeBoundingBox();
+    this.geometry.computeBoundingSphere();
 
     // Regenerate scatter
     this.scatters.forEach( ( v ) => {
@@ -235,9 +239,9 @@ class TerrainPatch extends THREE.Mesh {
         );
         pos.y = noise;
         if ( pos.y < -15 ) {
-          let helper = new THREE.AxisHelper( 10 );
-          helper.position.set( pos.x + this.position.x, -15, pos.z + this.position.z );
-          window.flight.scene.add( helper );
+          // let helper = new THREE.AxisHelper( 10 );
+          // helper.position.set( pos.x + this.position.x, -15, pos.z + this.position.z );
+          // window.flight.scene.add( helper );
         }
         this.verts[ v ] = pos.x;
         this.verts[ v + 1 ] = pos.y;
