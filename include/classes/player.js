@@ -1,6 +1,6 @@
 import Mathf from './mathf';
 
-const FLIGHT_SPEED = 0;
+const FLIGHT_SPEED = 16;
 const HEIGHT = 400;
 const MAX_BANK = 0.6;
 const BANK_SPEED = 0.5;
@@ -50,4 +50,4 @@ class Player extends THREE.Object3D {
   }
 }
 
-export default Player;;;;
+export default Player;

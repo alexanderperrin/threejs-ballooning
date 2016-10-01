@@ -8,8 +8,8 @@ import Heightmap from './include/classes/heightmap';
 ( function () {
 
   // Rendering
-  const SHADOW_MAP_WIDTH = 1024;
-  const SHADOW_MAP_HEIGHT = 1024;
+  const SHADOW_MAP_WIDTH = 512;
+  const SHADOW_MAP_HEIGHT = 512;
   const SHADOW_CAM_SIZE = 512;
 
   // File
@@ -32,16 +32,17 @@ import Heightmap from './include/classes/heightmap';
   let renderer,
     scene,
     cameraControls,
-    shadowCam,
-    sun,
-    cameraAnchor,
-    gameCamera,
-    renderCamera,
-    editorCamera,
-    clock;
+    sun, // Directional light
+    cameraAnchor, // Camera base rotator
+    gameCamera, // Game view camera
+    renderCamera, // Currently rendering camera
+    editorCamera, // Utility view camera
+    lightAnchor, // Used for containing sun object and target in more managable unit
+    lightPosIndex, // Used for tracking movment of light
+    lightShadowOffset, // Used for offsetting shadow camera matrix
+    clock,
+    player;
 
-  // Player
-  let player;
 
   // Terrain
   const TERRAIN_PATCH_WIDTH = 64;
@@ -263,8 +264,7 @@ import Heightmap from './include/classes/heightmap';
     } );
     renderer.setClearColor( 0x000000, 1 );
     renderer.shadowMap.enabled = true;
-    console.log( renderer.shadowMap );
-    renderer.shadowMap.autoUpdate = true;
+    renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.needsUpdate = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById( 'container' ).appendChild( renderer.domElement );
@@ -277,14 +277,27 @@ import Heightmap from './include/classes/heightmap';
 
     scene = new THREE.Scene();
 
-    let axisHelper = new THREE.AxisHelper( TERRAIN_PATCH_WIDTH );
-    scene.add( axisHelper );
+    lightShadowOffset = new THREE.Object3D();
+
+    // Used for storing sun camera and target
+    lightAnchor = new THREE.Object3D();
+    scene.add( lightAnchor );
+    lightAnchor.add( lightShadowOffset );
+
+    // Used for transforming light and shadow cameras
+    let lightMatrix = new THREE.Matrix4();
+    let rotation = new THREE.Quaternion();
+    rotation.setFromEuler( new THREE.Euler(
+      THREE.Math.degToRad( 45 ),
+      THREE.Math.degToRad( -135 ),
+      0, 'YXZ' ) );
+    lightMatrix.compose( new THREE.Vector3( 0, 128, 0 ), rotation, new THREE.Vector3( 1, 1, 1 ) );
 
     // Lights
     sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    sun.position.set( 100, 150, 200 );
+    sun.position.set( 0, 0, 0 );
+    sun.target.position.set( 0, 0, 128 );
     scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
-    scene.add( sun );
     // scene.fog = new THREE.Fog( 0xdaf0fb, 350, 950 );
     let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
     hemiLight.position.set( 0, 500, 0 );
@@ -299,13 +312,14 @@ import Heightmap from './include/classes/heightmap';
     sun.shadow.camera.left = sCamSize / 2;
     sun.shadow.camera.top = sCamSize / 2;
     sun.shadow.camera.bottom = -sCamSize / 2;
-    sun.shadow.camera.far = 1024;
+    sun.shadow.camera.far = 512;
     sun.shadow.camera.near = 0;
     sun.shadow.bias = -0.0025;
 
-    scene.add( sun.target );
+    lightShadowOffset.add( sun );
+    lightShadowOffset.add( sun.target );
+    lightAnchor.applyMatrix( lightMatrix );
     scene.add( new THREE.CameraHelper( sun.shadow.camera ) );
-    scene.add( new THREE.DirectionalLightHelper( sun ) );
 
     window.flight.scene = scene;
   };
@@ -434,6 +448,7 @@ import Heightmap from './include/classes/heightmap';
 
     // Events
     addEvent( window, 'resize', resize );
+
     addEvent( window, 'keydown', function ( e ) {
       // Inputs
       if ( e.keyCode === 39 ) {
@@ -449,6 +464,7 @@ import Heightmap from './include/classes/heightmap';
         }
       }
     } );
+
     addEvent( window, 'keyup', function ( e ) {
       // Inputs
       if ( e.keyCode === 39 ) {
@@ -468,8 +484,18 @@ import Heightmap from './include/classes/heightmap';
     window.flight.input = input;
     window.flight.time = clock.getElapsedTime();
 
-    sun.target.position.z += 16 * dt;
-    sun.position.z += 16 * dt;
+    lightAnchor.position.z += TERRAIN_PATCH_HEIGHT;
+    lightAnchor.updateMatrixWorld();
+    // Snap the shadow camera matrix to the nearest texel to prevent shadow swimming
+    let lPos = new THREE.Vector3( 0, 0, 0 ); // Real shadow cam position
+    let lPos2 = new THREE.Vector3( 0, 0, 0 ); // Texel snapped cam position
+    lightAnchor.worldToLocal( lPos );
+    lPos2.set( lPos.x, lPos.y, lPos.z );
+    let tSize = SHADOW_CAM_SIZE / SHADOW_MAP_WIDTH;
+    lPos2.x = Math.round( lPos2.x / tSize ) * tSize;
+    lPos2.y = Math.round( lPos2.y / tSize ) * tSize;
+    lightShadowOffset.position.set( lPos.x - lPos2.x, lPos.y - lPos2.y, 0 );
+    renderer.shadowMap.needsUpdate = true;
 
     if ( player ) {
       player.update();
