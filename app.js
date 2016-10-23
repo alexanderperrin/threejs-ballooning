@@ -20,6 +20,7 @@ import Heightmap from './include/classes/heightmap';
   let meshFiles = [
     'tree.json',
     'balloon.json',
+    'boat01.json',
   ];
   let imageFiles = [];
 
@@ -386,8 +387,6 @@ import Heightmap from './include/classes/heightmap';
     let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
     hemiLight.position.set( 0, 500, 0 );
     scene.add( hemiLight );
-
-    // scene.add( new THREE.AxisHelper( 32 ) );
 
     // Shadows
     sun.castShadow = true;
