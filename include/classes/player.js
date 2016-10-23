@@ -1,4 +1,4 @@
-const FLIGHT_SPEED = 24;
+const FLIGHT_SPEED = 16;
 const BANK_SPEED = 0.5;
 const SPIN_SPEED = 1;
 const SIDEWAYS_SPEED = 5;

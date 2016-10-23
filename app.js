@@ -511,7 +511,7 @@ import Heightmap from './include/classes/heightmap';
       color: 0x2f5d63
     } );
     let riverMesh = new THREE.PlaneGeometry( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH,
-      TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT,
+      TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT * 2,
       1, 1 );
     waterPlane = new THREE.Mesh( riverMesh, riverMaterial );
     waterPlane.position.y = -15;
@@ -642,6 +642,11 @@ import Heightmap from './include/classes/heightmap';
         shiftTerrain( 0, 1 );
       }
       cameraAnchor.position.set( player.position.x, 0, player.position.z );
+      if ( cameraAnchor.position.x > 60 ) {
+        cameraAnchor.position.x = 60;
+      } else if ( cameraAnchor.position.x < -60 ) {
+        cameraAnchor.position.x = -60;
+      }
     }
 
     requestAnimationFrame( idle );

@@ -1,6 +1,6 @@
 import ImprovedNoise from '../ImprovedNoise';
 
-const VALLEY_01_SCALE = 0.035;
+const VALLEY_01_SCALE = 0.025;
 const VALLEY_02_SCALE = 0.01;
 const VALLEY_01_MULT = 1.0;
 const VALLEY_02_MULT = 0.5;
