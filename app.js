@@ -50,7 +50,7 @@ import Heightmap from './include/classes/heightmap';
   const TERRAIN_PATCHES_X = 5;
   const TERRAIN_PATCHES_Z = 12;
   const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
-  const TERRAIN_OFFSET_Z = -64;
+  const TERRAIN_OFFSET_Z = -128;
   const TREES_PER_TERRAIN = 50;
   const WATER_HEIGHT = -15.0;
   let heightmap = new Heightmap( {
