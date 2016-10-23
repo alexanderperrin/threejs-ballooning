@@ -359,7 +359,7 @@ import Heightmap from './include/classes/heightmap';
     hemiLight.position.set( 0, 500, 0 );
     scene.add( hemiLight );
 
-    scene.add( new THREE.AxisHelper( 32 ) );
+    // scene.add( new THREE.AxisHelper( 32 ) );
 
     // Shadows
     sun.castShadow = true;
@@ -461,8 +461,10 @@ import Heightmap from './include/classes/heightmap';
             y: 0.5,
             z: 0.5
           },
+          lockXZScale: true,
           minHeight: -10,
-          maxHeight: 100
+          maxHeight: 100,
+          maxSlope: 0.6
         } );
         terrainPatches[ i ][ j ] = tp;
         scene.add( terrainPatches[ i ][ j ] );
@@ -580,7 +582,7 @@ import Heightmap from './include/classes/heightmap';
     window.flight.time = clock.getElapsedTime();
 
     // Update shadow camera position
-    lightAnchor.position.z += dt * 16.0;
+    lightAnchor.position.z = player.position.z + 256;
     if ( Math.round( lightAnchor.position.z ) - lightPosIndex > SHADOW_CAM_STEP ) {
       lightPosIndex = Math.round( lightAnchor.position.z );
       lightAnchor.updateMatrixWorld();

@@ -16,10 +16,12 @@ class TerrainPatch extends THREE.Mesh {
     this.position.set( position.x, position.y, position.z );
     this.material = opts.hasOwnProperty( 'material' ) ? opts.material : undefined;
     this.verts = null;
+    this.verts3 = [];
     this.geometry = this.createGeometry();
     this.geometry.computeBoundingBox();
     this.geometry.computeBoundingSphere();
     this.scatters = [];
+    this.getNormal( this.position );
   }
 
   /**
@@ -46,11 +48,10 @@ class TerrainPatch extends THREE.Mesh {
 
     // Regenerate scatter
     this.scatters.forEach( ( v ) => {
-      this.remove( v.scatterMesh );
       scene.remove( v.scatterMesh );
       v.scatterMesh.geometry.dispose();
       v.scatterMesh = this.createScatterGeometry( v.opts );
-      this.add( v.scatterMesh );
+      window.flight.scene.add( v.scatterMesh );
     } );
   }
 
@@ -67,7 +68,7 @@ class TerrainPatch extends THREE.Mesh {
       opts: opts
     } );
 
-    this.add( scatterMesh );
+    window.flight.scene.add( scatterMesh );
   }
 
   /**
@@ -81,6 +82,8 @@ class TerrainPatch extends THREE.Mesh {
     let maxSize = opts.hasOwnProperty( 'maxSize' ) ? opts.maxSize : null;
     let minHeight = opts.hasOwnProperty( 'minHeight' ) ? opts.minHeight : 0;
     let maxHeight = opts.hasOwnProperty( 'maxHeight' ) ? opts.maxHeight : 128;
+    let lockXZScale = opts.hasOwnProperty( 'lockXZScale' ) ? opts.lockXZScale : false;
+    let maxSlope = opts.hasOwnProperty( 'maxSlope' ) ? opts.maxSlope : 0;
 
     let meshGeo = mesh.geometry;
     let vertCount = meshGeo.attributes.position.count;
@@ -122,14 +125,16 @@ class TerrainPatch extends THREE.Mesh {
     for ( let i = 0; i < count; ++i ) {
 
       let coord = {
-        x: Mathf.randRange( 0, 1 ),
-        y: Mathf.randRange( 0, 1 )
+        x: Mathf.randRange( this.position.x, this.position.x + this.width ),
+        y: 0,
+        z: Mathf.randRange( this.position.z, this.position.z + this.height )
       };
 
       let pos = this.getPosition( coord );
+      let normal = this.getNormal( coord );
 
       // Min height for spawn
-      if ( pos.y < minHeight || pos.y > maxHeight ) {
+      if ( pos.y < minHeight || pos.y > maxHeight || normal.y < maxSlope ) {
         continue;
       }
 
@@ -148,10 +153,11 @@ class TerrainPatch extends THREE.Mesh {
         this.heightmap.perlinNoise( pos.x + this.position.x, pos.z + this.position.z, 3 )
       );
 
+      let xScale = Mathf.randRange( minSize.x, maxSize.x );
       size = {
-        x: Mathf.randRange( minSize.x, maxSize.x ),
+        x: xScale,
         y: Mathf.randRange( minSize.y, maxSize.y ),
-        z: Mathf.randRange( minSize.z, maxSize.z )
+        z: lockXZScale ? xScale : Mathf.randRange( minSize.z, maxSize.z )
       };
 
       scale.set( size.x * pScale, size.y * pScale, size.z * pScale );
@@ -172,35 +178,32 @@ class TerrainPatch extends THREE.Mesh {
    */
   getPosition( coord ) {
 
-    // Clamp coordinates
-    coord.x = coord.x > 1.0 ? 1.0 : coord.x < 0.0 ? 0.0 : coord.x;
-    coord.y = coord.y > 1.0 ? 1.0 : coord.y < 0.0 ? 0.0 : coord.y;
+    let localCoord = {
+      x: ( coord.x - this.position.x ) / this.width,
+      y: ( coord.z - this.position.z ) / this.height
+    };
 
     // Base vertex index
-    let ix1 = Math.floor( coord.x * SEGS_X );
-    let iy1 = Math.floor( coord.y * SEGS_Y );
+    let ix1 = Math.floor( localCoord.x * SEGS_X );
+    let iy1 = Math.floor( localCoord.y * SEGS_Y );
 
-    let i1 = VERTS_X * iy1 + ix1; // Bottom left
-    let i2 = i1 + 1; // Bottom right
-    let i3 = i1 + VERTS_X; // Top left
-    let i4 = i3 + 1; // Top right
+    let i1 = ( VERTS_X * iy1 + ix1 ) * 3; // Bottom right
+    let i2 = i1 + 3; // Bottom left
+    let i3 = i1 + VERTS_X * 3; // Top right
+    let i4 = i3 + 3; // Top left
 
     // Grid index interpolant time values collected from remainder
-    let rx1 = coord.x * SEGS_X - ix1;
-    let ry1 = coord.y * SEGS_Y - iy1;
+    let rx1 = localCoord.x * SEGS_X - ix1;
+    let ry1 = localCoord.y * SEGS_Y - iy1;
 
     let h1, h2, h;
 
     // Interpolate heights of each vert using bilinear interpolation
-    h1 = Mathf.lerp( this.verts[ i1 * 3 + 1 ], this.verts[ i2 * 3 + 1 ], rx1 ); // Bottom left to bottom right
-    h2 = Mathf.lerp( this.verts[ i3 * 3 + 1 ], this.verts[ i4 * 3 + 1 ], rx1 ); // Top left to top right
+    h1 = Mathf.lerp( this.verts[ i1 + 1 ], this.verts[ i2 + 1 ], rx1 ); // Bottom left to bottom right
+    h2 = Mathf.lerp( this.verts[ i3 + 1 ], this.verts[ i4 + 1 ], rx1 ); // Top left to top right
     h = Mathf.lerp( h1, h2, ry1 );
 
-    return {
-      x: coord.x * this.width,
-      y: h,
-      z: coord.y * this.height
-    };
+    return new THREE.Vector3( coord.x, h, coord.z );
   }
 
   /**
@@ -208,20 +211,45 @@ class TerrainPatch extends THREE.Mesh {
    * @return {Vector3} The normal.
    */
   getNormal( coord ) {
-    // Clamp coordinates
-    coord.x = coord.x > 1.0 ? 1.0 : coord.x < 0.0 ? 0.0 : coord.x;
-    coord.y = coord.y > 1.0 ? 1.0 : coord.y < 0.0 ? 0.0 : coord.y;
+
+    let localCoord = {
+      x: ( coord.x - this.position.x ) / this.width,
+      y: ( coord.z - this.position.z ) / this.height
+    };
 
     // Base vertex index
-    let ix1 = Math.floor( coord.x * SEGS_X );
-    let iy1 = Math.floor( coord.y * SEGS_Y );
+    let ix1 = Math.floor( localCoord.x * SEGS_X );
+    let iy1 = Math.floor( localCoord.y * SEGS_Y );
 
-    let i1 = VERTS_X * iy1 + ix1; // Bottom left
-    let i2 = i1 + 1; // Bottom right
-    let i3 = i1 + VERTS_X; // Top left
-    let i4 = i3 + 1; // Top right
+    let i1 = ( VERTS_X * iy1 + ix1 ) * 3; // Bottom right
+    let i2 = i1 + 3; // Bottom left
+    let i3 = i1 + VERTS_X * 3; // Top right
+    let i4 = i3 + 3; // Top left
 
-    return new THREE.Vector3();
+    // Grid index interpolant time values collected from remainder
+    let rx1 = localCoord.x * SEGS_X - ix1;
+    let ry1 = localCoord.y * SEGS_Y - iy1;
+
+    let h1, h2, h;
+
+    let norms = this.geometry.attributes.normal.array;
+
+    // Interpolate heights of each vert using bilinear interpolation
+    let v1 = new THREE.Vector3();
+    v1.lerpVectors(
+      new THREE.Vector3( norms[ i1 ], norms[ i1 + 1 ], norms[ i1 + 2 ] ),
+      new THREE.Vector3( norms[ i2 ], norms[ i2 + 1 ], norms[ i2 + 2 ] ),
+      rx1
+    );
+    let v2 = new THREE.Vector3();
+    v2.lerpVectors(
+      new THREE.Vector3( norms[ i3 ], norms[ i3 + 1 ], norms[ i3 + 2 ] ),
+      new THREE.Vector3( norms[ i4 ], norms[ i4 + 1 ], norms[ i4 + 2 ] ),
+      rx1
+    );
+    let n = new THREE.Vector3();
+    n.lerpVectors( v1, v2, ry1 );
+    return n;
   }
 
   /**
@@ -284,4 +312,4 @@ class TerrainPatch extends THREE.Mesh {
   }
 }
 
-export default TerrainPatch;
+export default TerrainPatch;;
