@@ -49,7 +49,7 @@ class TerrainPatch extends THREE.Mesh {
       this.remove( v.scatterMesh );
       scene.remove( v.scatterMesh );
       v.scatterMesh.geometry.dispose();
-      v.scatterMesh = this.createScatterGeometry( v.baseMesh, v.scatterCount );
+      v.scatterMesh = this.createScatterGeometry( v.opts );
       this.add( v.scatterMesh );
     } );
   }
@@ -57,15 +57,14 @@ class TerrainPatch extends THREE.Mesh {
   /**
    * @description Adds a mesh to scatter on to the terrain.
    */
-  addScatterObject( mesh, count ) {
+  addScatterObject( opts ) {
 
-    let scatterMesh = this.createScatterGeometry( mesh, count );
+    let scatterMesh = this.createScatterGeometry( opts );
 
     // Store data for terrain to be able to rebuild scatter when regenerated
     this.scatters.push( {
-      baseMesh: mesh, // The mesh to be scattered
       scatterMesh: scatterMesh, // The batched scatter mesh
-      scatterCount: count // The amount of scattered meshes
+      opts: opts
     } );
 
     this.add( scatterMesh );
@@ -74,7 +73,15 @@ class TerrainPatch extends THREE.Mesh {
   /**
    * @description Creates the scatter geometry mesh.
    */
-  createScatterGeometry( mesh, count ) {
+  createScatterGeometry( opts ) {
+
+    let mesh = opts.hasOwnProperty( 'mesh' ) ? opts.mesh : null;
+    let count = opts.hasOwnProperty( 'count' ) ? opts.count : 0;
+    let minSize = opts.hasOwnProperty( 'minSize' ) ? opts.minSize : null;
+    let maxSize = opts.hasOwnProperty( 'maxSize' ) ? opts.maxSize : null;
+    let minHeight = opts.hasOwnProperty( 'minHeight' ) ? opts.minHeight : 0;
+    let maxHeight = opts.hasOwnProperty( 'maxHeight' ) ? opts.maxHeight : 128;
+
     let meshGeo = mesh.geometry;
     let vertCount = meshGeo.attributes.position.count;
 
@@ -108,7 +115,7 @@ class TerrainPatch extends THREE.Mesh {
     geometry.addAttribute( 'normal', normAttrib );
     geometry.addAttribute( 'color', colorAttrib );
 
-    let width;
+    let size;
     let sway = 0.05;
 
     // Create individual objects for the scatter
@@ -122,7 +129,7 @@ class TerrainPatch extends THREE.Mesh {
       let pos = this.getPosition( coord );
 
       // Min height for spawn
-      if ( pos.y < -10 ) {
+      if ( pos.y < minHeight || pos.y > maxHeight ) {
         continue;
       }
 
@@ -141,8 +148,13 @@ class TerrainPatch extends THREE.Mesh {
         this.heightmap.perlinNoise( pos.x + this.position.x, pos.z + this.position.z, 3 )
       );
 
-      width = Mathf.randRange( 0.25, 0.5 );
-      scale.set( width * pScale, 0.5 * pScale, width * pScale );
+      size = {
+        x: Mathf.randRange( minSize.x, maxSize.x ),
+        y: Mathf.randRange( minSize.y, maxSize.y ),
+        z: Mathf.randRange( minSize.z, maxSize.z )
+      };
+
+      scale.set( size.x * pScale, size.y * pScale, size.z * pScale );
       matrix.compose( position, rotation, scale );
       meshGeo.applyMatrix( matrix );
       geometry.merge( meshGeo, i * vertCount );
