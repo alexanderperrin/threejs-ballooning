@@ -69,6 +69,9 @@ import Heightmap from './include/classes/heightmap';
     y: 0
   };
 
+  // Shaders
+  let standardShader;
+
   // Input
   let input = {
     x: 0,
@@ -324,6 +327,31 @@ import Heightmap from './include/classes/heightmap';
     renderer.shadowMap.needsUpdate = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById( 'container' ).appendChild( renderer.domElement );
+
+    let mat = new THREE.ShaderMaterial( {
+      lights: true,
+      uniforms: THREE.ShaderLib.phong.uniforms,
+      uniforms: THREE.UniformsUtils.merge( [
+        THREE.ShaderLib.phong.uniforms,
+        {
+          xFogColor: {
+            type: 'c',
+            value: new THREE.Color( 0xFFFFFF )
+          },
+        }
+      ] ),
+      shading: THREE.FlatShading,
+      fog: true,
+      vertexShader: standardShader.vertexShader,
+      fragmentShader: standardShader.fragmentShader,
+      vertexColors: THREE.VertexColors
+    } );
+
+    // Assign materials
+    Object.keys( meshes ).forEach( v => {
+      let m = meshes[ v ];
+      m.material = mat;
+    } );
   };
 
   /**
@@ -382,6 +410,13 @@ import Heightmap from './include/classes/heightmap';
     lightAnchor.position.z += 400;
 
     window.flight.scene = scene;
+  };
+
+  let initShaders = function () {
+    standardShader = {
+      vertexShader: getShader( require( './include/shaders/standard_vert.glsl' ) ),
+      fragmentShader: getShader( require( './include/shaders/standard_frag.glsl' ) )
+    }
   };
 
   let initTerrain = function () {
@@ -521,6 +556,7 @@ import Heightmap from './include/classes/heightmap';
     window.flight.clock = clock;
     window.flight.input = 0;
 
+    initShaders();
     initRenderer();
     initScene();
     initPlayer();

@@ -1,10 +1,5 @@
-import Mathf from './mathf';
-
 const FLIGHT_SPEED = 24;
-const HEIGHT = 400;
-const MAX_BANK = 0.6;
 const BANK_SPEED = 0.5;
-const MAX_BANK_VEL = 1;
 const SPIN_SPEED = 1;
 const SIDEWAYS_SPEED = 5;
 

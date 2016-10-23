@@ -1,19 +1,12 @@
 #define PHONG
 
-uniform vec3 cliffColor;
-uniform vec3 grassColor;
-uniform vec3 sandColor;
+uniform vec3 diffuse;
 uniform vec3 emissive;
 uniform vec3 specular;
-uniform vec3 xFogColor;
 uniform float shininess;
 uniform float opacity;
-uniform float steps;
-uniform float threshold;
-uniform sampler2D map;
-uniform float waterHeight;
+uniform vec3 xFogColor;
 
-varying vec3 vWorldNormal;
 varying vec3 vWorldPos;
 
 #include <common>
@@ -42,10 +35,7 @@ void main() {
 
 	#include <clipping_planes_fragment>
 
-	float y = floor((vWorldNormal.y) * steps + threshold) / steps;
-	vec3 c = mix(sandColor, grassColor, clamp(floor(vWorldPos.y - waterHeight), 0.0, 1.0));
-	c = mix(cliffColor, c, y);
-	vec4 diffuseColor = vec4( c, opacity );
+	vec4 diffuseColor = vec4( diffuse, opacity );
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
 	vec3 totalEmissiveRadiance = emissive;
 
@@ -67,8 +57,6 @@ void main() {
 	#include <aomap_fragment>
 
 	vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-	float dot = pow(saturate(1.0 - dot(normalize(vViewPosition), normal)), 5.0);
-	outgoingLight += vec3(0.8 * dot, dot, 0.7 * dot);
 
 	#include <envmap_fragment>
 
@@ -79,6 +67,6 @@ void main() {
 	#include <encodings_fragment>
 	#include <fog_fragment>
 
-	c = gl_FragColor.rgb;
+	vec3 c = gl_FragColor.rgb;
 	gl_FragColor = mix(vec4(c, 1), vec4(xFogColor, 1), clamp((abs(vWorldPos.x) - 128.0) / 32.0, 0.0, 1.0));
 }

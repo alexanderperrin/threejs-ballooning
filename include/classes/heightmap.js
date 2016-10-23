@@ -56,4 +56,4 @@ class Heightmap {
   }
 }
 
-export default Heightmap;;
+export default Heightmap;

@@ -230,8 +230,6 @@ class TerrainPatch extends THREE.Mesh {
     let rx1 = localCoord.x * SEGS_X - ix1;
     let ry1 = localCoord.y * SEGS_Y - iy1;
 
-    let h1, h2, h;
-
     let norms = this.geometry.attributes.normal.array;
 
     // Interpolate heights of each vert using bilinear interpolation
@@ -312,4 +310,4 @@ class TerrainPatch extends THREE.Mesh {
   }
 }
 
-export default TerrainPatch;;
+export default TerrainPatch;
