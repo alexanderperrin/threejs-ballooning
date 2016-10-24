@@ -5,6 +5,7 @@ const BANK_SPEED = 0.5;
 const SPIN_SPEED = 1;
 const SIDEWAYS_SPEED = 5;
 const FLAG_ADJUST_SPEED = 15;
+const SCARF_SEG_DIST = 0.5;
 
 class Player extends THREE.Object3D {
   constructor() {
@@ -28,7 +29,7 @@ class Player extends THREE.Object3D {
     } );
     let geometry = new THREE.Geometry();
     for ( let i = 0; i < 20; ++i ) {
-      geometry.vertices.push( new THREE.Vector3( this.position.x, this.position.y, this.position.z + i * -5 ) );
+      geometry.vertices.push( new THREE.Vector3( this.position.x, this.position.y, this.position.z + i * SCARF_SEG_DIST ) );
     }
     this.scarf = {
       renderer: new THREE.Line( geometry, material ),
@@ -70,8 +71,10 @@ class Player extends THREE.Object3D {
         let p1 = points[ i ];
         let p2 = points[ i - 1 ];
         p1.x = Mathf.moveTowards( p1.x, p2.x, FLAG_ADJUST_SPEED * dt * Math.abs( p1.x - p2.x ) );
-        p1.y = Mathf.moveTowards( p1.y, p2.y, FLAG_ADJUST_SPEED * dt * Math.abs( p1.y - p2.y ) );
-        p1.z = Mathf.moveTowards( p1.z, p2.z, FLAG_ADJUST_SPEED * dt * Math.abs( p1.z - p2.z ) );
+        p1.y = p2.y;
+        if ( Math.abs( p1.z - p2.z ) > SCARF_SEG_DIST ) {
+          p1.z += p2.z - p1.z - SCARF_SEG_DIST;
+        }
         p1.x += Math.sin( p1.z * 0.2 ) * 0.1 / ( i + 1 );
       }
     }
@@ -80,4 +83,4 @@ class Player extends THREE.Object3D {
   }
 }
 
-export default Player;;
+export default Player;

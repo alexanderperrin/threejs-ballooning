@@ -17,7 +17,8 @@ module.exports = {
         test: /\.js$/,
         exclude: [
           /node_modules/,
-          /vendor/
+          /vendor/,
+          /lib/
         ],
         loader: 'jshint-loader'
       }

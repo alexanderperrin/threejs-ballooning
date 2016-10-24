@@ -1,5 +1,6 @@
 require( './node_modules\/three\/src\/loaders\/ObjectLoader' );
 require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
+require( './lib/THREE.MeshLine' );
 
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
