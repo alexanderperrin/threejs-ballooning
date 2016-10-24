@@ -4,6 +4,7 @@ require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
+import $ from 'jquery';
 
 ( function () {
 
@@ -43,6 +44,7 @@ import Heightmap from './include/classes/heightmap';
     lightPosIndex, // Used for tracking movment of light
     lightShadowOffset, // Used for offsetting shadow camera matrix
     clock,
+    loadingMessage,
     player;
 
   // Terrain
@@ -269,6 +271,9 @@ import Heightmap from './include/classes/heightmap';
   };
 
   let loadMeshes = function () {
+
+    loadingMessage.html( 'geometry' );
+
     return new Promise( function ( resolve ) {
       let numFiles = meshFiles.length;
       if ( numFiles === 0 ) {
@@ -291,6 +296,9 @@ import Heightmap from './include/classes/heightmap';
    * Loads the textures specified in the textures URL array.
    */
   let loadTextures = function () {
+
+    loadingMessage.html( 'images' );
+
     return new Promise( function ( resolve ) {
       let numFiles = imageFiles.length;
       if ( numFiles === 0 ) {
@@ -327,7 +335,7 @@ import Heightmap from './include/classes/heightmap';
     renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.needsUpdate = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    document.getElementById( 'container' ).appendChild( renderer.domElement );
+    document.getElementById( 'canvas-container' ).appendChild( renderer.domElement );
 
     let mat = new THREE.ShaderMaterial( {
       lights: true,
@@ -581,6 +589,13 @@ import Heightmap from './include/classes/heightmap';
       }
     } );
 
+    addEvent( window, 'touchmove', function () {
+      // Prevent scroll behaviour
+      if ( !event.target.classList.contains( 'scrollable' ) ) {
+        event.preventDefault();
+      }
+    } );
+
     addEvent( window, 'touchstart', function ( e ) {
       let mp = window.innerWidth / 2;
       let p = e.touches[ 0 ].clientX;
@@ -607,6 +622,8 @@ import Heightmap from './include/classes/heightmap';
     } );
 
     resize();
+
+    $( '#loader' ).fadeOut( 'slow' );
   };
 
   let idle = function () {
@@ -652,9 +669,16 @@ import Heightmap from './include/classes/heightmap';
     render();
   };
 
-  loadTextures()
-    .then( loadMeshes )
-    .then( init )
-    .then( idle );
+  $( document ).ready( function () {
+
+    loadingMessage = $( '#loading-message' );
+    loadingMessage.html( 'code' );
+
+    loadTextures()
+      .then( loadMeshes )
+      .then( init )
+      .then( idle );
+
+  } );
 
 } )();

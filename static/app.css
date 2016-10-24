@@ -1,10 +1,68 @@
-body {
-	overflow	: hidden;
-	padding		: 0;
-	margin		: 0;
+@-moz-keyframes spin {
+    100% {
+        -moz-transform: rotate(360deg);
+    }
+}
 
-	color		: #222;
-	background-color: #BBB;
-	font-family	: arial;
-	font-size	: 100%;
+@-webkit-keyframes spin {
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@keyframes spin {
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+body {
+    color: black;
+    background-color: white;
+    font-family: sans-serif;
+}
+
+#heading {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    margin-top: 0px;
+}
+
+#canvas-container {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+}
+
+#loader {
+    background-color: white;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+}
+
+#loader> .label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    text-align: center;
+    width: 200px;
+    height: 48px;
+    margin-top: -24px;
+    margin-left: -100px;
+    color: #ddd;
+}
+
+#loader> .label> .spinner {
+    display: block;
+    margin: auto;
+    -webkit-animation: spin 0.5s linear infinite;
+    -moz-animation: spin 0.5s linear infinite;
+    animation: spin 0.5s linear infinite;
 }
