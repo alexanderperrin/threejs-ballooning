@@ -5,6 +5,8 @@ require( './lib/THREE.MeshLine' );
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
+import Bird from './include/classes/bird';
+import Mathf from './include/classes/mathf';
 import $ from 'jquery';
 
 ( function () {
@@ -31,6 +33,14 @@ import $ from 'jquery';
   // Data storage
   let meshes = {};
   let textures = {};
+
+  // Birds
+  const BIRD_COUNT = 2;
+  const BIRD_SPAWN_DISTANCE = -128;
+  const BIRD_RESPAWN_DISTANCE = 512;
+  const BIRD_MAX_RESPAWN_TIME = 10;
+  let birdsVisible = false;
+  let birds = [];
 
   // Lights, camera and helpers
   let renderer,
@@ -135,7 +145,9 @@ import $ from 'jquery';
 
     // set the initial state (but only if browser supports the Page Visibility API)
     if ( document[ hidden ] !== undefined )
-      onchange( { type: document[ hidden ] ? "blur" : "focus" } );
+      onchange( {
+        type: document[ hidden ] ? "blur" : "focus"
+      } );
   } )();
 
   /**
@@ -253,6 +265,20 @@ import $ from 'jquery';
     };
   };
 
+  let getLandscapeMidpoint = function () {
+    return {
+      x: ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2 + TERRAIN_OFFSET_X
+    }
+  };
+
+  let getLandscapeWidth = function () {
+    return TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH;
+  };
+
+  let getLandscapeDepth = function () {
+    return TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT;
+  };
+
   /// Redraw the view
   let render = function () {
     renderer.render( scene, renderCamera );
@@ -342,8 +368,7 @@ import $ from 'jquery';
       lights: true,
       uniforms: THREE.ShaderLib.phong.uniforms,
       uniforms: THREE.UniformsUtils.merge( [
-        THREE.ShaderLib.phong.uniforms,
-        {
+        THREE.ShaderLib.phong.uniforms, {
           xFogColor: {
             type: 'c',
             value: new THREE.Color( 0xFFFFFF )
@@ -557,6 +582,36 @@ import $ from 'jquery';
     renderCamera = gameCamera;
   };
 
+  let respawnBirds = function () {
+    let spawnWidth = getLandscapeWidth() * 0; //.25;
+    let bunchFactor = Mathf.randRange( 0.2, 1 );
+    let flockPosition = new THREE.Vector3(
+      Mathf.randRange( -spawnWidth, spawnWidth ),
+      Mathf.randRange( 64, 128 ),
+      player.position.z + BIRD_SPAWN_DISTANCE
+    );
+    let birdPos;
+    for ( let i = 0; i < BIRD_COUNT; ++i ) {
+      birdPos = flockPosition.clone().add(
+        new THREE.Vector3(
+          Mathf.randRange( -32, 32 ) * bunchFactor,
+          Mathf.randRange( -16, 16 ) * bunchFactor,
+          Mathf.randRange( -48, 48 ) * bunchFactor
+        )
+      );
+      birds[ i ].position.copy( birdPos );
+    }
+  };
+
+  let initBirds = function () {
+    for ( let i = 0; i < BIRD_COUNT; ++i ) {
+      let bird = new Bird();
+      scene.add( bird );
+      birds.push( bird );
+    }
+    respawnBirds();
+  };
+
   let init = function () {
 
     window.flight = {};
@@ -569,7 +624,12 @@ import $ from 'jquery';
     initScene();
     initPlayer();
     initCameras();
+    initBirds();
     initTerrain();
+
+    let a = new THREE.AxisHelper( 20 );
+    a.position.set( 0, 0, 0 );
+    scene.add( a );
 
     // Events
     addEvent( window, 'resize', resize );
@@ -665,6 +725,17 @@ import $ from 'jquery';
         cameraAnchor.position.x = -60;
       }
     }
+
+    // Animate birds
+    let avBirdPos = new THREE.Vector3();
+    birds.forEach( b => {
+      avBirdPos.add( b.position );
+    } );
+    avBirdPos.divideScalar( birds.length );
+    // Basic flocking
+    birds.forEach( b => {
+      b.update( dt, avBirdPos, player );
+    } );
 
     requestAnimationFrame( idle );
     render();
