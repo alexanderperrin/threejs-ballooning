@@ -55,8 +55,12 @@ import $ from 'jquery';
     lightPosIndex, // Used for tracking movment of light
     lightShadowOffset, // Used for offsetting shadow camera matrix
     clock,
+    _this,
     loadingMessage,
     player;
+
+  // Debug rays
+  let rays = [];
 
   // Terrain
   const TERRAIN_PATCH_WIDTH = 64;
@@ -618,6 +622,8 @@ import $ from 'jquery';
     clock = new THREE.Clock( true );
     window.flight.clock = clock;
     window.flight.input = 0;
+    window.flight.debug = {};
+    window.flight.debug.drawRay = drawRay;
 
     initShaders();
     initRenderer();
@@ -687,6 +693,23 @@ import $ from 'jquery';
     $( '#loader' ).fadeOut( 'slow' );
   };
 
+  let drawRay = function ( position, direction, color ) {
+    var material = new THREE.LineBasicMaterial( {
+      color: color
+    } );
+
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(
+      new THREE.Vector3(),
+      direction.clone()
+    );
+
+    var line = new THREE.Line( geometry, material );
+    line.position.copy( position );
+    rays.push( line );
+    scene.add( line );
+  };
+
   let idle = function () {
 
     let dt = clock.getDelta();
@@ -739,6 +762,11 @@ import $ from 'jquery';
 
     requestAnimationFrame( idle );
     render();
+
+    // Remove the rays
+    rays.forEach( r => {
+      scene.remove( r );
+    } );
   };
 
   $( document ).ready( function () {
@@ -752,5 +780,7 @@ import $ from 'jquery';
       .then( idle );
 
   } );
+
+  _this = this;
 
 } )();

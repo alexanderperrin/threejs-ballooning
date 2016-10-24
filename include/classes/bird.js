@@ -18,6 +18,10 @@ class Bird extends THREE.Object3D {
     // Drag velocity
     this.velocity.sub( this.velocity.clone().multiplyScalar( dt ) );
     let centerDist = this.position.distanceTo( center );
+    let v = center.clone().sub( this.position );
+    let sqDist = v.lengthSq();
+    let vN = v.clone().normalize();
+    window.flight.debug.drawRay( this.position, v, new THREE.Color( 0x00fffff ) );
   }
 }
 
