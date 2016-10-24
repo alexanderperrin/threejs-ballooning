@@ -4,8 +4,8 @@ const FLIGHT_SPEED = 16;
 const BANK_SPEED = 0.5;
 const SPIN_SPEED = 1;
 const SIDEWAYS_SPEED = 5;
-const FLAG_ADJUST_SPEED = 15;
-const SCARF_SEG_DIST = 0.5;
+const FLAG_ADJUST_SPEED = 55;
+const SCARF_SEG_DIST = 0.3;
 
 class Player extends THREE.Object3D {
   constructor() {
@@ -16,6 +16,7 @@ class Player extends THREE.Object3D {
     this.bankVelocity = 0.0;
     this.rotation.set( 0, 0, 0, 'ZXY' );
     this.scarf = null;
+    this.spin = 0.0;
     this.gridPos = {
       x: 0,
       y: 0
@@ -24,18 +25,21 @@ class Player extends THREE.Object3D {
   }
 
   initScarf() {
-    let material = new THREE.LineBasicMaterial( {
-      color: 0x994400
-    } );
     let geometry = new THREE.Geometry();
     for ( let i = 0; i < 20; ++i ) {
       geometry.vertices.push( new THREE.Vector3( this.position.x, this.position.y, this.position.z + i * SCARF_SEG_DIST ) );
     }
-    this.scarf = {
-      renderer: new THREE.Line( geometry, material ),
-      points: geometry.vertices
-    };
-    window.flight.scene.add( this.scarf.renderer );
+    let line = new THREE.MeshLine();
+    let material = new THREE.MeshLineMaterial( {
+      color: new THREE.Color( 0x663322 )
+    } );
+    line.setGeometry( geometry, function ( v ) {
+      return 0.3;
+    } );
+    let mesh = new THREE.Mesh( line.geometry, material ); // this syntax could definitely be improved!
+    this.scarf = line;
+    console.log( this.scarf );
+    window.flight.scene.add( mesh );
   }
 
   update() {
@@ -45,6 +49,7 @@ class Player extends THREE.Object3D {
     // Twist
     this.angularVelocity.y += dt * input.x * SPIN_SPEED;
     this.rotation.y += this.angularVelocity.y * dt;
+    this.rotation.y += dt * 0.1;
     this.angularVelocity.y -= this.angularVelocity.y * dt;
 
     // Move left and right
@@ -61,25 +66,29 @@ class Player extends THREE.Object3D {
     this.rotation.z += this.bankVelocity * dt;
     this.rotation.z -= Math.sign( this.rotation.z ) * Math.pow( this.rotation.z, 2 ) * dt * 5;
 
-    for ( let i = 0; i < this.scarf.points.length; ++i ) {
-      let points = this.scarf.points;
+    // Positions array is interleved vector3
+    let positions = this.scarf.positions;
+    let numPoints = positions.length;
+    for ( let i = 0; i < numPoints; i += 3 ) {
       if ( i === 0 ) {
         // Position first scarf point at balloon position
-        points[ i ].set( this.position.x, this.position.y - 3, this.position.z );
-        this.scarf.renderer.geometry.verticesNeedUpdate = true;
+        positions[ i ] = this.position.x;
+        positions[ i + 1 ] = this.position.y - 3;
+        positions[ i + 2 ] = this.position.z;
       } else {
-        let p1 = points[ i ];
-        let p2 = points[ i - 1 ];
-        p1.x = Mathf.moveTowards( p1.x, p2.x, FLAG_ADJUST_SPEED * dt * Math.abs( p1.x - p2.x ) );
-        p1.y = p2.y;
-        if ( Math.abs( p1.z - p2.z ) > SCARF_SEG_DIST ) {
-          p1.z += p2.z - p1.z - SCARF_SEG_DIST;
+        // i - 3 for previous point
+        positions[ i ] = Mathf.moveTowards( positions[ i ], positions[ i - 3 ],
+          FLAG_ADJUST_SPEED / numPoints * Math.abs( positions[ i ] - positions[ i - 3 ] ) );
+        positions[ i + 1 ] = positions[ i - 2 ];
+        if ( Math.abs( positions[ i + 2 ] - positions[ i - 1 ] ) > SCARF_SEG_DIST ) {
+          positions[ i + 2 ] += positions[ i - 1 ] - positions[ i + 2 ] - SCARF_SEG_DIST;
         }
-        p1.x += Math.sin( p1.z * 0.2 ) * 0.1 / ( i + 1 );
+        positions[ i ] += Math.sin( positions[ i + 2 ] * 0.2 ) * 0.3 / ( i + 1 );
       }
     }
-    this.scarf.renderer.geometry.computeBoundingBox();
-    this.scarf.renderer.geometry.computeBoundingSphere();
+    this.scarf.process();
+    this.scarf.geometry.computeBoundingBox();
+    this.scarf.geometry.computeBoundingSphere();
   }
 }
 
