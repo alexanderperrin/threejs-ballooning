@@ -62,7 +62,9 @@ body {
 #loader> .label> .spinner {
     display: block;
     margin: auto;
-    -webkit-animation: spin 0.5s linear infinite;
-    -moz-animation: spin 0.5s linear infinite;
-    animation: spin 0.5s linear infinite;
+    width: 48px;
+    height: 48px;
+    -webkit-animation: spin 0.25s linear infinite;
+    -moz-animation: spin 0.25s linear infinite;
+    animation: spin 0.25s linear infinite;
 }
