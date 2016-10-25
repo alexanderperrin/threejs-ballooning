@@ -2,6 +2,7 @@ require( './node_modules\/three\/src\/loaders\/ObjectLoader' );
 require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
 require( './lib/THREE.MeshLine' );
 
+import Detector from './lib/Detector'
 import Player from './include/classes/player';
 import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
@@ -10,6 +11,8 @@ import Mathf from './include/classes/mathf';
 import $ from 'jquery';
 
 ( function () {
+
+  if ( !Detector.webgl ) Detector.addGetWebGLMessage();
 
   // Rendering
   const SHADOW_MAP_WIDTH = 1024;
@@ -35,8 +38,8 @@ import $ from 'jquery';
   let textures = {};
 
   // Birds
-  const BIRD_COUNT = 50;
-  const BIRD_SPAWN_DISTANCE = -128;
+  const BIRD_COUNT = 40;
+  const BIRD_SPAWN_DISTANCE = -200;
   const BIRD_RESPAWN_DISTANCE = 512;
   const BIRD_MAX_RESPAWN_TIME = 10;
   let birdsVisible = false;
@@ -361,7 +364,7 @@ import $ from 'jquery';
     renderer = new THREE.WebGLRenderer( {
       antialias: false
     } );
-    renderer.setClearColor( 0xFFFFFF, 1 );
+    renderer.setClearColor( 'white', 1 );
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.needsUpdate = true;
@@ -605,6 +608,7 @@ import $ from 'jquery';
       );
       birds[ i ].position.copy( birdPos );
     }
+    // Loop this function every so often
     setTimeout( respawnBirds, 30000 + Mathf.randRange( 0, 20000 ) );
   };
 
@@ -657,11 +661,17 @@ import $ from 'jquery';
       }
     } );
 
-    addEvent( window, 'touchmove', function () {
+    window.addEventListener( 'touchmove', function ( e ) {
+      console.log( e );
       // Prevent scroll behaviour
       if ( !event.target.classList.contains( 'scrollable' ) ) {
         event.preventDefault();
       }
+    } );
+
+    window.addEventListener( 'mousewheel', function ( e ) {
+      // Disable mouse wheel scrolling
+      e.preventDefault();
     } );
 
     addEvent( window, 'touchstart', function ( e ) {
@@ -676,7 +686,7 @@ import $ from 'jquery';
       }
     } );
 
-    addEvent( window, 'touchend', function () {
+    window.addEventListener( 'touchend', function () {
       input.x = 0;
     } );
 
