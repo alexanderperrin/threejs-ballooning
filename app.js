@@ -12,8 +12,6 @@ import $ from 'jquery';
 
 ( function () {
 
-  if ( !Detector.webgl ) Detector.addGetWebGLMessage();
-
   // Rendering
   const SHADOW_MAP_WIDTH = 1024;
   const SHADOW_MAP_HEIGHT = 1024;
@@ -783,12 +781,16 @@ import $ from 'jquery';
   $( document ).ready( function () {
 
     loadingMessage = $( '#loading-message' );
-    loadingMessage.html( 'code' );
 
-    loadTextures()
-      .then( loadMeshes )
-      .then( init )
-      .then( idle );
+    if ( !Detector.webgl ) {
+      $( '.label' ).html( "My apologies, your device doesn't support WebGL, which is what this thing relies on! Try updating it, or try another one." );
+    } else {
+      loadingMessage.html( 'code' );
+      loadTextures()
+        .then( loadMeshes )
+        .then( init )
+        .then( idle );
+    }
 
   } );
 

@@ -63,10 +63,10 @@ canvas {
     top: 50%;
     left: 50%;
     text-align: center;
-    width: 200px;
+    width: 256px;
     height: 48px;
     margin-top: -24px;
-    margin-left: -100px;
+    margin-left: -128px;
     color: #ddd;
 }
 
