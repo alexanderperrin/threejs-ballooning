@@ -35,7 +35,7 @@ import $ from 'jquery';
   let textures = {};
 
   // Birds
-  const BIRD_COUNT = 2;
+  const BIRD_COUNT = 50;
   const BIRD_SPAWN_DISTANCE = -128;
   const BIRD_RESPAWN_DISTANCE = 512;
   const BIRD_MAX_RESPAWN_TIME = 10;
@@ -587,7 +587,7 @@ import $ from 'jquery';
   };
 
   let respawnBirds = function () {
-    let spawnWidth = getLandscapeWidth() * 0; //.25;
+    let spawnWidth = getLandscapeWidth() * 0.3;
     let bunchFactor = Mathf.randRange( 0.2, 1 );
     let flockPosition = new THREE.Vector3(
       Mathf.randRange( -spawnWidth, spawnWidth ),
@@ -605,6 +605,7 @@ import $ from 'jquery';
       );
       birds[ i ].position.copy( birdPos );
     }
+    setTimeout( respawnBirds, 30000 + Mathf.randRange( 0, 20000 ) );
   };
 
   let initBirds = function () {
