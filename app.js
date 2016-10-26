@@ -588,7 +588,7 @@ import $ from 'jquery';
   };
 
   let respawnBirds = function () {
-    let spawnWidth = getLandscapeWidth() * 0.3;
+    let spawnWidth = getLandscapeWidth() * 0.25;
     let bunchFactor = Mathf.randRange( 0.2, 1 );
     let flockPosition = new THREE.Vector3(
       Mathf.randRange( -spawnWidth, spawnWidth ),
