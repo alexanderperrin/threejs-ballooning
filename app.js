@@ -782,7 +782,7 @@ import $ from 'jquery';
 
     loadingMessage = $( '#loading-message' );
 
-    if ( !Detector.webgl ) {
+    if ( !Detector.webgl || !Detector.canvas ) {
       $( '.label' ).html( "My apologies, your device doesn't support WebGL, which is what this thing relies on! Try updating it, or try another one." );
     } else {
       loadingMessage.html( 'code' );

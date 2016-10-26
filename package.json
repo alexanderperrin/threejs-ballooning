@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "webpack-dev-server --inline",
+    "dev": "webpack-dev-server --inline --host 192.168.0.100",
     "build": "webpack --config webpack-production.config.js -p"
   },
   "author": "Alexander Perrin",
