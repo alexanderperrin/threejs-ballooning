@@ -72,6 +72,7 @@ import $ from 'jquery';
   const TERRAIN_OFFSET_Z = -128;
   const TREES_PER_TERRAIN = 50;
   const WATER_HEIGHT = -15.0;
+  const DEPTH_FOR_BOAT = -23.0;
   let heightmap = new Heightmap( {
     noiseOffset: {
       x: -TERRAIN_OFFSET_X,
@@ -214,12 +215,27 @@ import $ from 'jquery';
    * @param  {[type]} y terrain units to shift in y
    */
   let shiftTerrain = function ( x, y ) {
+
     // Shift forward
     for ( let i = 0; i < y; ++i ) {
       for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
         let tp = terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ][ j ];
         tp.position.z += TERRAIN_PATCH_HEIGHT * TERRAIN_PATCHES_Z;
         tp.rebuild( scene );
+
+        // Random chance of spawning a boat for this terrain patch
+        let spawnBoat = Mathf.randRange( 0.0, 1.0 ) > 0.9;
+        if ( spawnBoat ) {
+          let boatPoints = tp.getPointsBelowHeight( DEPTH_FOR_BOAT );
+          let average = new THREE.Vector3();
+          boatPoints.forEach( v => {
+            average.add( v );
+          } );
+          average.divideScalar( boatPoints.length );
+          let ah = new THREE.AxisHelper( 10 );
+          ah.position.set( average.x, WATER_HEIGHT, average.z );
+          scene.add( ah );
+        }
       }
     }
     // Shift right

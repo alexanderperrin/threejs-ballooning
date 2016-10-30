@@ -56,6 +56,30 @@ class TerrainPatch extends THREE.Mesh {
   }
 
   /**
+   * Returns array of points below a height depth.
+   * Used primarily for boat spawning.
+   */
+  getPointsBelowHeight( height ) {
+    let vertsX = SEGS_X + 1;
+    let vertsY = SEGS_Y + 1;
+    let v = 0;
+    let points = [];
+    for ( let i = 0; i < vertsY; ++i ) {
+      for ( let j = 0; j < vertsX; ++j, v += 3 ) {
+        if ( this.verts[ v + 1 ] < height ) {
+          points.push( new THREE.Vector3(
+            this.verts[ v ] + this.position.x,
+            this.verts[ v + 1 ] + this.position.y,
+            this.verts[ v + 2 ] + this.position.z
+          ) );
+        }
+      }
+    }
+    console.log( points );
+    return points;
+  }
+
+  /**
    * @description Adds a mesh to scatter on to the terrain.
    */
   addScatterObject( opts ) {
@@ -310,4 +334,4 @@ class TerrainPatch extends THREE.Mesh {
   }
 }
 
-export default TerrainPatch;
+export default TerrainPatch;;
