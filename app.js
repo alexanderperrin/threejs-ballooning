@@ -272,21 +272,17 @@ import $ from 'jquery';
 
   let spawnObjectsForTerrainPatch = function ( tp ) {
 
-    console.log( 'spawning objects' );
-
     // Used for delaying spawn items
     let currentTime = clock.getElapsedTime();
 
     let data = tp.getNiceHeightmapData();
 
-    // let numPiers = 0;
+    let numPiers = 0;
 
     data.forEach( v => {
 
       // Boat and pier spawning
       if ( currentTime - lastBoatSpawnTime >= boatSpawnDelay ) {
-
-        console.log( 'spawning boat!' );
 
         // Boats
         if ( v.position.y <= DEPTH_FOR_BOAT && v.normal.y >= 0.99 ) {
@@ -309,8 +305,7 @@ import $ from 'jquery';
         }
 
         // Piers
-        if ( Math.abs( v.position.y - ( WATER_HEIGHT + 0.5 ) ) < 1.5 && v.normal.y > 0.7 ) {
-
+        if ( Math.abs( v.position.y - ( WATER_HEIGHT + 0.5 ) ) < 1.5 && v.normal.y > 0.7 && numPiers < 3 ) {
           let offset = new THREE.Vector2( v.normal.x, v.normal.z ).normalize().multiplyScalar( 20 );
           let pierPos = new THREE.Vector3( v.position.x + offset.x, WATER_HEIGHT, v.position.z + offset.y );
           if ( tp.getPosition( pierPos ).y < DEPTH_FOR_BOAT * 0.75 ) {
@@ -321,6 +316,7 @@ import $ from 'jquery';
             pier.castShadow = true;
             pier.rotation.z = rotation + Math.PI / 2;
             scene.add( pier );
+            numPiers++;
           }
         }
       }
