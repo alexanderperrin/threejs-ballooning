@@ -89,7 +89,7 @@ import $ from 'jquery';
   // Boats
   let lastBoatSpawnTime = 0;
   const MIN_TIME_FOR_BOAT = 5;
-  const MAX_TIME_FOR_BOAT = 5;
+  const MAX_TIME_FOR_BOAT = 30;
   const DEPTH_FOR_BOAT = -20.0;
   const SLOPE_FOR_BOAT = 0.5;
   let boatSpawnDelay = 0;
@@ -313,7 +313,7 @@ import $ from 'jquery';
 
           let offset = new THREE.Vector2( v.normal.x, v.normal.z ).normalize().multiplyScalar( 20 );
           let pierPos = new THREE.Vector3( v.position.x + offset.x, WATER_HEIGHT, v.position.z + offset.y );
-          if ( tp.getPosition( pierPos ).y < -22.5 ) {
+          if ( tp.getPosition( pierPos ).y < DEPTH_FOR_BOAT * 0.75 ) {
             let rotation = Math.atan2( v.normal.x, v.normal.z );
             let pier = meshes[ 'pier' ].clone();
             pier.scale.set( 1.5, 1.5, 1.5 );
