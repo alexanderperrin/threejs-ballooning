@@ -17,11 +17,11 @@ class TerrainPatch extends THREE.Mesh {
     this.material = opts.hasOwnProperty( 'material' ) ? opts.material : undefined;
     this.verts = null;
     this.verts3 = [];
+    this.normals = [];
     this.geometry = this.createGeometry();
     this.geometry.computeBoundingBox();
     this.geometry.computeBoundingSphere();
     this.scatters = [];
-    this.getNormal( this.position );
   }
 
   /**
@@ -42,9 +42,9 @@ class TerrainPatch extends THREE.Mesh {
       }
     }
     this.geometry.attributes.position.needsUpdate = true;
-    this.geometry.computeVertexNormals();
     this.geometry.computeBoundingBox();
     this.geometry.computeBoundingSphere();
+    this.geometry.computeVertexNormals();
 
     // Regenerate scatter
     this.scatters.forEach( ( v ) => {
@@ -56,26 +56,30 @@ class TerrainPatch extends THREE.Mesh {
   }
 
   /**
-   * Returns array of points below a height depth.
-   * Used primarily for boat spawning.
+   * Returns normal and position data as nice object array.
    */
-  getPointsBelowHeight( height ) {
+  getNiceHeightmapData() {
     let vertsX = SEGS_X + 1;
     let vertsY = SEGS_Y + 1;
     let v = 0;
     let points = [];
+    let norms = this.geometry.attributes.normal.array;
     for ( let i = 0; i < vertsY; ++i ) {
       for ( let j = 0; j < vertsX; ++j, v += 3 ) {
-        if ( this.verts[ v + 1 ] < height ) {
-          points.push( new THREE.Vector3(
+        points.push( {
+          position: new THREE.Vector3(
             this.verts[ v ] + this.position.x,
             this.verts[ v + 1 ] + this.position.y,
             this.verts[ v + 2 ] + this.position.z
-          ) );
-        }
+          ),
+          normal: new THREE.Vector3(
+            norms[ v ],
+            norms[ v + 1 ],
+            norms[ v + 2 ]
+          )
+        } );
       }
     }
-    console.log( points );
     return points;
   }
 

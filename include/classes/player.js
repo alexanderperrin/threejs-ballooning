@@ -1,6 +1,6 @@
 import Mathf from './mathf';
 
-const FLIGHT_SPEED = 60;
+const FLIGHT_SPEED = 30;
 const BANK_SPEED = 0.5;
 const SPIN_SPEED = 1;
 const SIDEWAYS_SPEED = 5;
