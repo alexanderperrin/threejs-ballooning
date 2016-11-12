@@ -12,6 +12,31 @@ import $ from 'jquery';
 
 ( function () {
 
+  if ( "performance" in window == false ) {
+    window.performance = {};
+  }
+
+  Date.now = ( Date.now || function () { // thanks IE8
+    return new Date().getTime();
+  } );
+
+  if ( "now" in window.performance == false ) {
+
+    var nowOffset = Date.now();
+
+    if ( performance.timing && performance.timing.navigationStart ) {
+      nowOffset = performance.timing.navigationStart
+    }
+
+    window.performance.now = function now() {
+      return Date.now() - nowOffset;
+    }
+  }
+
+} )();
+
+( function () {
+
   // Rendering
   const SHADOW_MAP_WIDTH = 1024;
   const SHADOW_MAP_HEIGHT = 1024;
@@ -302,24 +327,22 @@ import $ from 'jquery';
     } );
   };
 
-  let loadMeshes = function () {
+  let loadMeshes = function ( callback ) {
 
     loadingMessage.html( 'geometry' );
 
-    return new Promise( function ( resolve ) {
-      let numFiles = meshFiles.length;
-      if ( numFiles === 0 ) {
-        resolve();
-      }
-      meshFiles.forEach( v => {
-        objectLoader.load( MESH_PATH + v, ( obj ) => {
-          let name = obj.name;
-          meshes[ name ] = obj;
-          numFiles--;
-          if ( numFiles === 0 ) {
-            resolve();
-          }
-        } );
+    let numFiles = meshFiles.length;
+    if ( numFiles === 0 ) {
+      callback();
+    }
+    meshFiles.forEach( v => {
+      objectLoader.load( MESH_PATH + v, ( obj ) => {
+        let name = obj.name;
+        meshes[ name ] = obj;
+        numFiles--;
+        if ( numFiles === 0 ) {
+          callback();
+        }
       } );
     } );
   };
@@ -327,30 +350,28 @@ import $ from 'jquery';
   /**
    * Loads the textures specified in the textures URL array.
    */
-  let loadTextures = function () {
+  let loadTextures = function ( callback ) {
 
     loadingMessage.html( 'images' );
 
-    return new Promise( function ( resolve ) {
-      let numFiles = imageFiles.length;
-      if ( numFiles === 0 ) {
-        resolve();
-      }
-      imageFiles.forEach( v => {
-        let texture = new THREE.Texture();
-        let image = new Image();
-        image.onload = function () {
-          texture.image = image;
-          texture.needsUpdate = true;
-          texture.name = v;
-          textures[ v ] = texture;
-          numFiles--;
-          if ( numFiles === 0 ) {
-            resolve();
-          }
-        };
-        image.src = IMAGE_PATH + v;
-      } );
+    let numFiles = imageFiles.length;
+    if ( numFiles === 0 ) {
+      callback();
+    }
+    imageFiles.forEach( v => {
+      let texture = new THREE.Texture();
+      let image = new Image();
+      image.onload = function () {
+        texture.image = image;
+        texture.needsUpdate = true;
+        texture.name = v;
+        textures[ v ] = texture;
+        numFiles--;
+        if ( numFiles === 0 ) {
+          callback();
+        }
+      };
+      image.src = IMAGE_PATH + v;
     } );
   };
 
@@ -398,6 +419,8 @@ import $ from 'jquery';
    * Initialises the base scene objects and helpers.
    */
   let initScene = function () {
+
+    console.log( 'initialising scene' );
 
     scene = new THREE.Scene();
 
@@ -621,8 +644,12 @@ import $ from 'jquery';
 
   let init = function () {
 
+    loadingMessage.html( 'world' );
+
     window.flight = {};
     clock = new THREE.Clock( true );
+    clock.start();
+    console.log( clock );
     window.flight.clock = clock;
     window.flight.input = 0;
     window.flight.debug = {};
@@ -700,6 +727,10 @@ import $ from 'jquery';
     resize();
 
     $( '#loader' ).fadeOut( 'slow' );
+
+    console.log( 'initialisation complete' );
+
+    idle()
   };
 
   let drawRay = function ( position, direction, color ) {
@@ -786,11 +817,15 @@ import $ from 'jquery';
       $( '.label' ).html( "My apologies, your device doesn't support WebGL, which is what this thing relies on! Try updating it, or try another one." );
     } else {
       loadingMessage.html( 'code' );
-      loadTextures()
-        .then( loadMeshes )
-        .then( init )
-        .then( idle );
     }
+
+    loadTextures( () => {
+      console.log( 'textures loaded' );
+      loadMeshes( () => {
+        console.log( 'meshes loaded' );
+        init();
+      } );
+    } );
 
   } );
 
