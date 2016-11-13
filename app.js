@@ -394,7 +394,7 @@ import $ from 'jquery';
 
   let randomRiverSpawn = function () {
     return Mathf.randRange( 0, 1 ) + CHANCE_FOR_SPAWN > 1.0;
-  }
+  };
 
   let getLandscapeMidpoint = function () {
     return {
@@ -720,25 +720,25 @@ import $ from 'jquery';
 
   let respawnBirds = function () {
     let spawnWidth = getLandscapeWidth() * 0.25;
-    let bunchFactor = Mathf.randRange( 0.2, 1 );
+    let bunchFactor = Mathf.randRange2( 0.2, 1 );
     let flockPosition = new THREE.Vector3(
-      Mathf.randRange( -spawnWidth, spawnWidth ),
-      Mathf.randRange( 64, 128 ),
+      Mathf.randRange2( -spawnWidth, spawnWidth ),
+      Mathf.randRange2( 64, 128 ),
       player.position.z + BIRD_SPAWN_DISTANCE
     );
     let birdPos;
     for ( let i = 0; i < BIRD_COUNT; ++i ) {
       birdPos = flockPosition.clone().add(
         new THREE.Vector3(
-          Mathf.randRange( -32, 32 ) * bunchFactor,
-          Mathf.randRange( -16, 16 ) * bunchFactor,
-          Mathf.randRange( -48, 48 ) * bunchFactor
+          Mathf.randRange2( -32, 32 ) * bunchFactor,
+          Mathf.randRange2( -16, 16 ) * bunchFactor,
+          Mathf.randRange2( -48, 48 ) * bunchFactor
         )
       );
       birds[ i ].position.copy( birdPos );
     }
     // Loop this function every so often
-    setTimeout( respawnBirds, 30000 + Mathf.randRange( 0, 20000 ) );
+    setTimeout( respawnBirds, 30000 + Mathf.randRange2( 0, 20000 ) );
   };
 
   let initBirds = function () {
