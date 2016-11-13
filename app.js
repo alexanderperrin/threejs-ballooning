@@ -338,6 +338,21 @@ import $ from 'jquery';
   };
 
   /**
+   * Returns the terrain snapped position of the given world position.
+   * Returns undefined if position is not over landscape.
+   */
+  let worldToTerrain = function ( position ) {
+    for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
+      for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
+        if ( terrainPatches[ i ][ j ].containsWorldPosition( position ) ) {
+          return terrainPatches[ i ][ j ].getPosition( position );
+        }
+      }
+    }
+    return undefined;
+  };
+
+  /**
    * World position to terrain grid index transformation
    * @param  {vec3} pos world position
    * @return {vec2}     terrain index
