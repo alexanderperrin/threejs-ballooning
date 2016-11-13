@@ -8,6 +8,7 @@ import TerrainPatch from './include/classes/terrain-patch';
 import Heightmap from './include/classes/heightmap';
 import Bird from './include/classes/bird';
 import Mathf from './include/classes/mathf';
+import Random from './include/classes/random';
 import $ from 'jquery';
 
 ( function () {
@@ -52,6 +53,7 @@ import $ from 'jquery';
     'balloon.json',
     'boat01.json',
     'pier01.json',
+    'church01.json',
   ];
   let imageFiles = [];
 
@@ -88,7 +90,14 @@ import $ from 'jquery';
 
   // Boats
   const DEPTH_FOR_BOAT = -21;
-  const CHANCE_FOR_SPAWN = 0.05;
+
+  // Random object spawn chances
+  const CHANCE_FOR_DOCK = 0.05;
+  const CHANCE_FOR_CHURCH = 0.5;
+
+  // Random generators
+  let random = new Random( 'jfw3uhfoi44' );
+  let birdRandom = new Random( '9ehg0wj40jf' );
 
   // Debug rays
   let rays = [];
@@ -252,9 +261,7 @@ import $ from 'jquery';
         tp.rebuild( scene );
       }
     }
-    if ( randomRiverSpawn() ) {
-      spawnObjectsForTerrainPatches( terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ] );
-    }
+    spawnObjectsForTerrainPatches( terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ] );
 
     terrainGridIndex.y += y;
     waterPlane.position.z += TERRAIN_PATCH_HEIGHT * y;
@@ -269,7 +276,9 @@ import $ from 'jquery';
 
     let boatSpawnPoints = [];
     let pierSpawnPoints = [];
+    let buildingSpawnPoints = [];
 
+    // Iterate through heightmap to find appropriate places for spawning objects
     data.forEach( v => {
       // Find suitable positions for spawning boats
       if ( v.position.y <= DEPTH_FOR_BOAT && v.normal.y >= 0.99 ) {
@@ -278,57 +287,81 @@ import $ from 'jquery';
       if ( Math.abs( v.position.y - ( WATER_HEIGHT + 0.5 ) ) < 1.5 && v.normal.y > 0.7 ) {
         pierSpawnPoints.push( v );
       }
+      if ( v.position.y > WATER_HEIGHT && v.normal.y > 0.9 ) {
+        buildingSpawnPoints.push( v );
+      }
     } );
 
-    if ( boatSpawnPoints.length > 0 ) {
-      // Spawn a patch of boats
-      let numBoats = Math.ceil( Mathf.randRange( 1, 5 ) );
-      let point = boatSpawnPoints[ Math.floor( Mathf.randRange( 0, boatSpawnPoints.length ) ) ];
-      for ( let i = 0; i < numBoats; ++i ) {
-        let angle = Mathf.randRange( 0, Math.PI * 2 );
-        let dist = i * 5;
-        let boat = meshes[ 'boat' ].clone();
-        boat.castShadow = true;
-        let scale = Mathf.randRange( 0.5, 0.75 );
-        boat.scale.set( scale, scale, scale );
-        boat.rotation.y = Mathf.randRange( 0, Math.PI * 2 );
-        let xOffset = Math.cos( angle ) * dist;
-        let zOffset = Math.sin( angle ) * dist;
-        boat.position.set( point.position.x + xOffset, WATER_HEIGHT + 0.5 * scale, point.position.z + zOffset );
-        scene.add( boat );
+    if ( randomChance( CHANCE_FOR_DOCK ) ) {
+      // Boat spawning
+      if ( boatSpawnPoints.length > 0 ) {
+        // Spawn a patch of boats
+        let numBoats = Math.ceil( random.range( 1, 5 ) );
+        let point = boatSpawnPoints[ Math.floor( random.range( 0, boatSpawnPoints.length ) ) ];
+        for ( let i = 0; i < numBoats; ++i ) {
+          let angle = random.range( 0, Math.PI * 2 );
+          let dist = i * 5;
+          let boat = meshes[ 'boat' ].clone();
+          boat.castShadow = true;
+          let scale = random.range( 0.5, 0.75 );
+          boat.scale.set( scale, scale, scale );
+          boat.rotation.y = random.range( 0, Math.PI * 2 );
+          let xOffset = Math.cos( angle ) * dist;
+          let zOffset = Math.sin( angle ) * dist;
+          boat.position.set( point.position.x + xOffset, WATER_HEIGHT + 0.5 * scale, point.position.z + zOffset );
+          scene.add( boat );
+        }
       }
-    }
 
-    let numPiers = Math.ceil( Mathf.randRange( 1, 3 ) );
-    if ( pierSpawnPoints.length > 0 ) {
+      // Pier spawning
+      let numPiers = Math.ceil( random.range( 1, 3 ) );
+      if ( pierSpawnPoints.length > 0 ) {
+        for ( let i = 0; i < numPiers; ++i ) {
+          let v = pierSpawnPoints[ Math.floor( random.range( 0, pierSpawnPoints.length ) ) ];
+          // Check that there's enough room for the pier to be placed in the water
+          let offset = new THREE.Vector2( v.normal.x, v.normal.z ).normalize().multiplyScalar( 20 );
+          let pierPos = new THREE.Vector3( v.position.x + offset.x, WATER_HEIGHT, v.position.z + offset.y );
+          let depthPos = sampleLandscapePosition( pierPos );
+          if ( depthPos !== undefined ) {
 
-      for ( let i = 0; i < numPiers; ++i ) {
-        let v = pierSpawnPoints[ Math.floor( Mathf.randRange( 0, pierSpawnPoints.length ) ) ];
+            if ( depthPos.y < DEPTH_FOR_BOAT * 0.75 ) {
+              let pos = new THREE.Vector3();
+              pos.copy( v.position );
+              let waterDiff = pos.y - WATER_HEIGHT;
+              let dir = new THREE.Vector3( v.normal.x, 0, v.normal.z ).multiplyScalar( waterDiff / ( 1.0 - v.normal.y ) * 0.5 );
+              pos.y -= waterDiff;
+              pos.add( dir );
 
-        // Check that there's enough room for the pier to be placed in the water
-        let offset = new THREE.Vector2( v.normal.x, v.normal.z ).normalize().multiplyScalar( 20 );
-        let pierPos = new THREE.Vector3( v.position.x + offset.x, WATER_HEIGHT, v.position.z + offset.y );
-        let depthPos = sampleLandscapePosition( pierPos );
-        if ( depthPos !== undefined ) {
-          if ( depthPos.y < DEPTH_FOR_BOAT * 0.75 ) {
-            let pos = new THREE.Vector3();
-            pos.copy( v.position );
-            let waterDiff = pos.y - WATER_HEIGHT;
-            let dir = new THREE.Vector3( v.normal.x, 0, v.normal.z ).multiplyScalar( waterDiff / ( 1.0 - v.normal.y ) * 0.5 );
-            pos.y -= waterDiff;
-            pos.add( dir );
-
-            let rotation = Math.atan2( v.normal.x, v.normal.z );
-            let pier = meshes[ 'pier' ].clone();
-            pier.scale.set( 1.5, 1.5, 1.5 );
-            pier.position.set( pos.x, WATER_HEIGHT + 1.5, pos.z );
-            pier.castShadow = true;
-            pier.rotation.z = rotation + Math.PI / 2;
-            scene.add( pier );
+              let rotation = Math.atan2( v.normal.x, v.normal.z );
+              let pier = meshes[ 'pier' ].clone();
+              pier.scale.set( 1.5, 1.5, 1.5 );
+              pier.position.set( pos.x, WATER_HEIGHT + 1.5, pos.z );
+              pier.castShadow = true;
+              pier.rotation.z = rotation + Math.PI / 2;
+              scene.add( pier );
+            }
           }
         }
       }
     }
+
+    if ( randomChance( CHANCE_FOR_CHURCH ) ) {
+      let point = buildingSpawnPoints[ Math.floor( random.range( 0, buildingSpawnPoints.length ) ) ];
+      let pos = point.position;
+      let rotation = Math.atan2( point.normal.x, point.normal.z );
+      let church = meshes[ 'church' ].clone();
+      church.position.copy( pos );
+      church.scale.multiplyScalar( 1.5 );
+      church.position.y += 4;
+      church.castShadow = true;
+      church.rotation.y = rotation - Math.PI / 2;
+      scene.add( church );
+    }
+
+    // Landscape objects
+    // if ( randomChance( CHANCE_FOR_CHURCH ) ) {
+    //   // let v = aboveWaterPoints[Math.floor(random.range(0, pierSpawnPoints))]
+    // }
   };
 
   /**
@@ -392,8 +425,8 @@ import $ from 'jquery';
     };
   };
 
-  let randomRiverSpawn = function () {
-    return Mathf.randRange( 0, 1 ) + CHANCE_FOR_SPAWN > 1.0;
+  let randomChance = function ( chance ) {
+    return random.range( 0, 1 ) + chance > 1.0;
   };
 
   let getLandscapeMidpoint = function () {
@@ -668,9 +701,7 @@ import $ from 'jquery';
     }
 
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
-      if ( randomRiverSpawn() ) {
-        spawnObjectsForTerrainPatches( terrainPatches[ i ] );
-      }
+      spawnObjectsForTerrainPatches( terrainPatches[ i ] );
     }
 
     // River plane
@@ -720,25 +751,25 @@ import $ from 'jquery';
 
   let respawnBirds = function () {
     let spawnWidth = getLandscapeWidth() * 0.25;
-    let bunchFactor = Mathf.randRange2( 0.2, 1 );
+    let bunchFactor = birdRandom.range( 0.2, 1 );
     let flockPosition = new THREE.Vector3(
-      Mathf.randRange2( -spawnWidth, spawnWidth ),
-      Mathf.randRange2( 64, 128 ),
+      birdRandom.range( -spawnWidth, spawnWidth ),
+      birdRandom.range( 64, 128 ),
       player.position.z + BIRD_SPAWN_DISTANCE
     );
     let birdPos;
     for ( let i = 0; i < BIRD_COUNT; ++i ) {
       birdPos = flockPosition.clone().add(
         new THREE.Vector3(
-          Mathf.randRange2( -32, 32 ) * bunchFactor,
-          Mathf.randRange2( -16, 16 ) * bunchFactor,
-          Mathf.randRange2( -48, 48 ) * bunchFactor
+          birdRandom.range( -32, 32 ) * bunchFactor,
+          birdRandom.range( -16, 16 ) * bunchFactor,
+          birdRandom.range( -48, 48 ) * bunchFactor
         )
       );
       birds[ i ].position.copy( birdPos );
     }
     // Loop this function every so often
-    setTimeout( respawnBirds, 30000 + Mathf.randRange2( 0, 20000 ) );
+    setTimeout( respawnBirds, 30000 + birdRandom.range( 0, 20000 ) );
   };
 
   let initBirds = function () {
