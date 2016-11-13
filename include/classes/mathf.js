@@ -1,3 +1,7 @@
+import SeedRandom from 'seedrandom';
+
+let rnd = new SeedRandom( '83ga38uhj3' );
+
 class Mathf {
   static clamp( num, min, max ) {
     return num < min ? min : num > max ? max : num;
@@ -7,19 +11,19 @@ class Mathf {
     return from + t * ( to - from );
   }
 
-  static inverseLerp (from, to, t) {
+  static inverseLerp( from, to, t ) {
     let v = from;
-    if (t <= from) {
+    if ( t <= from ) {
       v = from;
-    } else if (t >= to) {
+    } else if ( t >= to ) {
       v = to;
     }
-    v = (t - from) / (to - from);
+    v = ( t - from ) / ( to - from );
     return v;
   }
 
   static randRange( min, max ) {
-    return Math.random() * ( max - min ) + min;
+    return rnd.quick() * ( max - min ) + min;
   }
 
   static moveTowards( current, target, maxDelta ) {

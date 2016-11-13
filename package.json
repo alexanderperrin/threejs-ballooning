@@ -27,6 +27,7 @@
     "jshint-loader": "^0.8.3",
     "json-loader": "^0.5.4",
     "node-libs-browser": "^1.0.0",
+    "seedrandom": "^2.4.2",
     "strip-loader": "^0.1.2",
     "style-loader": "^0.13.1",
     "three": "^0.78.0",
