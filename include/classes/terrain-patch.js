@@ -24,11 +24,17 @@ class TerrainPatch extends THREE.Mesh {
     this.geometry.computeBoundingSphere();
     this.scatters = [];
 
+    this.axisHelper = null;
+    this.boundingBoxHelper = null;
+
     // Add debug helpers
     if ( this.debug ) {
-      let bb = new THREE.BoundingBoxHelper( this, 0xffaa00 );
-      bb.update();
-      window.flight.scene.add( bb );
+      this.boundingBoxHelper = new THREE.BoundingBoxHelper( this, 0xffaa00 );
+      this.boundingBoxHelper.update();
+      this.axisHelper = new THREE.AxisHelper( this.width / 2 );
+      this.axisHelper.position.copy( this.position );
+      window.flight.scene.add( this.axisHelper );
+      window.flight.scene.add( this.boundingBoxHelper );
     }
   }
 
@@ -61,6 +67,11 @@ class TerrainPatch extends THREE.Mesh {
       v.scatterMesh = this.createScatterGeometry( v.opts );
       window.flight.scene.add( v.scatterMesh );
     } );
+
+    if ( this.debug ) {
+      this.boundingBoxHelper.update();
+      this.axisHelper.position.copy( this.position );
+    }
   }
 
   /**
@@ -250,7 +261,7 @@ class TerrainPatch extends THREE.Mesh {
       x: ( coord.x - this.position.x ) / this.width,
       y: ( coord.z - this.position.z ) / this.height
     };
-    return x <= 1.0 && x >= 0 && y <= 1 && y >= 0;
+    return localCoord.x <= 1.0 && localCoord.x >= 0 && localCoord.y <= 1 && localCoord.y >= 0;
   };
 
   /**

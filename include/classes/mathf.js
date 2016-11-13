@@ -1,6 +1,6 @@
 import SeedRandom from 'seedrandom';
 
-let rnd = new SeedRandom( '83ga38uhj3' );
+let rnd = new SeedRandom( 'gh3jf023ja84' );
 
 class Mathf {
   static clamp( num, min, max ) {

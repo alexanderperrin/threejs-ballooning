@@ -87,12 +87,8 @@ import $ from 'jquery';
     player;
 
   // Boats
-  let lastBoatSpawnTime = 0;
-  const MIN_TIME_FOR_BOAT = 5;
-  const MAX_TIME_FOR_BOAT = 30;
-  const DEPTH_FOR_BOAT = -20.0;
-  const SLOPE_FOR_BOAT = 0.5;
-  let boatSpawnDelay = 0;
+  const DEPTH_FOR_BOAT = -21;
+  const CHANCE_FOR_SPAWN = 0.05;
 
   // Debug rays
   let rays = [];
@@ -100,15 +96,15 @@ import $ from 'jquery';
   // Terrain
   const TERRAIN_PATCH_WIDTH = 64;
   const TERRAIN_PATCH_HEIGHT = 64;
-  const TERRAIN_PATCHES_X = 5;
+  const TERRAIN_PATCHES_X = 6;
   const TERRAIN_PATCHES_Z = 12;
-  const TERRAIN_OFFSET_X = -( TERRAIN_PATCH_WIDTH * ( TERRAIN_PATCHES_X ) ) * 0.5;
+  const TERRAIN_OFFSET_X = ( -TERRAIN_PATCHES_X * 0.5 ) * TERRAIN_PATCH_WIDTH;
   const TERRAIN_OFFSET_Z = -128;
   const TREES_PER_TERRAIN = 50;
   const WATER_HEIGHT = -15.0;
   let heightmap = new Heightmap( {
     noiseOffset: {
-      x: -TERRAIN_OFFSET_X,
+      x: 0,
       y: -TERRAIN_OFFSET_Z
     },
     height: 50,
@@ -254,73 +250,85 @@ import $ from 'jquery';
         let tp = terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ][ j ];
         tp.position.z += TERRAIN_PATCH_HEIGHT * TERRAIN_PATCHES_Z;
         tp.rebuild( scene );
-        spawnObjectsForTerrainPatch( tp );
       }
     }
-    // Shift right
-    for ( let i = 0; i < x; ++i ) {
-      for ( let j = 0; j < TERRAIN_PATCHES_Z; ++j ) {
-        let tp = terrainPatches[ j ][ terrainGridIndex.x % TERRAIN_PATCHES_X ];
-        tp.position.x += TERRAIN_PATCH_WIDTH * TERRAIN_PATCHES_X;
-        tp.rebuild( scene );
-      }
+    if ( randomRiverSpawn() ) {
+      spawnObjectsForTerrainPatches( terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ] );
     }
-    terrainGridIndex.x += x;
+
     terrainGridIndex.y += y;
     waterPlane.position.z += TERRAIN_PATCH_HEIGHT * y;
   };
 
-  let spawnObjectsForTerrainPatch = function ( tp ) {
+  let spawnObjectsForTerrainPatches = function ( terrainPatches ) {
 
-    // Used for delaying spawn items
-    let currentTime = clock.getElapsedTime();
+    let data = [];
+    terrainPatches.forEach( v => {
+      data = data.concat( v.getNiceHeightmapData() );
+    } );
 
-    let data = tp.getNiceHeightmapData();
-
-    let numPiers = 0;
+    let boatSpawnPoints = [];
+    let pierSpawnPoints = [];
 
     data.forEach( v => {
+      // Find suitable positions for spawning boats
+      if ( v.position.y <= DEPTH_FOR_BOAT && v.normal.y >= 0.99 ) {
+        boatSpawnPoints.push( v );
+      }
+      if ( Math.abs( v.position.y - ( WATER_HEIGHT + 0.5 ) ) < 1.5 && v.normal.y > 0.7 ) {
+        pierSpawnPoints.push( v );
+      }
+    } );
 
-      // Boat and pier spawning
-      if ( currentTime - lastBoatSpawnTime >= boatSpawnDelay ) {
+    if ( boatSpawnPoints.length > 0 ) {
+      // Spawn a patch of boats
+      let numBoats = Math.ceil( Mathf.randRange( 1, 5 ) );
+      let point = boatSpawnPoints[ Math.floor( Mathf.randRange( 0, boatSpawnPoints.length ) ) ];
+      for ( let i = 0; i < numBoats; ++i ) {
+        let angle = Mathf.randRange( 0, Math.PI * 2 );
+        let dist = i * 5;
+        let boat = meshes[ 'boat' ].clone();
+        boat.castShadow = true;
+        let scale = Mathf.randRange( 0.5, 0.75 );
+        boat.scale.set( scale, scale, scale );
+        boat.rotation.y = Mathf.randRange( 0, Math.PI * 2 );
+        let xOffset = Math.cos( angle ) * dist;
+        let zOffset = Math.sin( angle ) * dist;
+        boat.position.set( point.position.x + xOffset, WATER_HEIGHT + 0.5 * scale, point.position.z + zOffset );
+        scene.add( boat );
+      }
+    }
 
-        // Boats
-        if ( v.position.y <= DEPTH_FOR_BOAT && v.normal.y >= 0.99 ) {
-          lastBoatSpawnTime = currentTime;
-          boatSpawnDelay = Mathf.randRange( MIN_TIME_FOR_BOAT, MAX_TIME_FOR_BOAT );
-          let numBoats = Math.round( Mathf.randRange( 1, 4 ) );
-          for ( let i = 0; i < numBoats; ++i ) {
-            let angle = Mathf.randRange( 0, Math.PI * 2 );
-            let dist = i * 6;
-            let boat = meshes[ 'boat' ].clone();
-            boat.castShadow = true;
-            let scale = Mathf.randRange( 0.5, 0.75 );
-            boat.scale.set( scale, scale, scale );
-            boat.rotation.y = Mathf.randRange( 0, Math.PI * 2 );
-            let xOffset = Math.cos( angle ) * dist;
-            let zOffset = Math.sin( angle ) * dist;
-            boat.position.set( v.position.x + xOffset, WATER_HEIGHT + 0.5 * scale, v.position.z + zOffset );
-            scene.add( boat );
-          }
-        }
+    let numPiers = Math.ceil( Mathf.randRange( 1, 3 ) );
+    if ( pierSpawnPoints.length > 0 ) {
 
-        // Piers
-        if ( Math.abs( v.position.y - ( WATER_HEIGHT + 0.5 ) ) < 1.5 && v.normal.y > 0.7 && numPiers < 3 ) {
-          let offset = new THREE.Vector2( v.normal.x, v.normal.z ).normalize().multiplyScalar( 20 );
-          let pierPos = new THREE.Vector3( v.position.x + offset.x, WATER_HEIGHT, v.position.z + offset.y );
-          if ( tp.getPosition( pierPos ).y < DEPTH_FOR_BOAT * 0.75 ) {
+      for ( let i = 0; i < numPiers; ++i ) {
+        let v = pierSpawnPoints[ Math.floor( Mathf.randRange( 0, pierSpawnPoints.length ) ) ];
+
+        // Check that there's enough room for the pier to be placed in the water
+        let offset = new THREE.Vector2( v.normal.x, v.normal.z ).normalize().multiplyScalar( 20 );
+        let pierPos = new THREE.Vector3( v.position.x + offset.x, WATER_HEIGHT, v.position.z + offset.y );
+        let depthPos = sampleLandscapePosition( pierPos );
+        if ( depthPos !== undefined ) {
+          if ( depthPos.y < DEPTH_FOR_BOAT * 0.75 ) {
+            let pos = new THREE.Vector3();
+            pos.copy( v.position );
+            let waterDiff = pos.y - WATER_HEIGHT;
+            let dir = new THREE.Vector3( v.normal.x, 0, v.normal.z ).multiplyScalar( waterDiff / ( 1.0 - v.normal.y ) * 0.5 );
+            pos.y -= waterDiff;
+            pos.add( dir );
+
             let rotation = Math.atan2( v.normal.x, v.normal.z );
             let pier = meshes[ 'pier' ].clone();
             pier.scale.set( 1.5, 1.5, 1.5 );
-            pier.position.set( v.position.x, WATER_HEIGHT + 1.5, v.position.z );
+            pier.position.set( pos.x, WATER_HEIGHT + 1.5, pos.z );
             pier.castShadow = true;
             pier.rotation.z = rotation + Math.PI / 2;
             scene.add( pier );
-            numPiers++;
           }
         }
       }
-    } );
+    }
   };
 
   /**
@@ -341,11 +349,22 @@ import $ from 'jquery';
    * Returns the terrain snapped position of the given world position.
    * Returns undefined if position is not over landscape.
    */
-  let worldToTerrain = function ( position ) {
+  let sampleLandscapePosition = function ( worldPosition ) {
     for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
       for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
-        if ( terrainPatches[ i ][ j ].containsWorldPosition( position ) ) {
-          return terrainPatches[ i ][ j ].getPosition( position );
+        if ( terrainPatches[ i ][ j ].containsWorldPosition( worldPosition ) ) {
+          return terrainPatches[ i ][ j ].getPosition( worldPosition );
+        }
+      }
+    }
+    return undefined;
+  };
+
+  let sampleLandscapeNormal = function ( worldPosition ) {
+    for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
+      for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
+        if ( terrainPatches[ i ][ j ].containsWorldPosition( worldPosition ) ) {
+          return terrainPatches[ i ][ j ].getNormal( worldPosition );
         }
       }
     }
@@ -372,6 +391,10 @@ import $ from 'jquery';
       z: getRandomArbitrary( 0, TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) + TERRAIN_OFFSET_Z
     };
   };
+
+  let randomRiverSpawn = function () {
+    return Mathf.randRange( 0, 1 ) + CHANCE_FOR_SPAWN > 1.0;
+  }
 
   let getLandscapeMidpoint = function () {
     return {
@@ -616,7 +639,8 @@ import $ from 'jquery';
             TERRAIN_PATCH_HEIGHT * i + TERRAIN_OFFSET_Z
           ),
           heightmap: heightmap,
-          material: landscapeMaterial
+          material: landscapeMaterial,
+          debug: false
         } );
         tp.receiveShadow = true;
         tp.castShadow = true;
@@ -640,7 +664,12 @@ import $ from 'jquery';
         } );
         terrainPatches[ i ][ j ] = tp;
         scene.add( terrainPatches[ i ][ j ] );
-        spawnObjectsForTerrainPatch( tp );
+      }
+    }
+
+    for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
+      if ( randomRiverSpawn() ) {
+        spawnObjectsForTerrainPatches( terrainPatches[ i ] );
       }
     }
 
@@ -807,7 +836,8 @@ import $ from 'jquery';
     idle()
   };
 
-  let drawRay = function ( position, direction, color ) {
+  let drawRay = function ( position, direction, color, duration ) {
+    console.log( duration );
     var material = new THREE.LineBasicMaterial( {
       color: color
     } );
@@ -820,7 +850,10 @@ import $ from 'jquery';
 
     var line = new THREE.Line( geometry, material );
     line.position.copy( position );
-    rays.push( line );
+    rays.push( {
+      line: line,
+      killTime: window.flight.time + duration
+    } );
     scene.add( line );
   };
 
@@ -878,8 +911,11 @@ import $ from 'jquery';
     render();
 
     // Remove the rays
+    let t = window.flight.time;
     rays.forEach( r => {
-      scene.remove( r );
+      if ( t > r.killTime ) {
+        scene.remove( r.line );
+      }
     } );
   };
 
