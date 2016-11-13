@@ -12,6 +12,7 @@ class TerrainPatch extends THREE.Mesh {
     this.width = opts.hasOwnProperty( 'width' ) ? opts.width : 0;
     this.height = opts.hasOwnProperty( 'height' ) ? opts.height : 0;
     this.heightmap = opts.hasOwnProperty( 'heightmap' ) ? opts.heightmap : undefined;
+    this.debug = opts.hasOwnProperty( 'debug' ) ? opts.debug : false;
     let position = opts.hasOwnProperty( 'position' ) ? opts.position : new THREE.Vector3();
     this.position.set( position.x, position.y, position.z );
     this.material = opts.hasOwnProperty( 'material' ) ? opts.material : undefined;
@@ -22,6 +23,13 @@ class TerrainPatch extends THREE.Mesh {
     this.geometry.computeBoundingBox();
     this.geometry.computeBoundingSphere();
     this.scatters = [];
+
+    // Add debug helpers
+    if ( this.debug ) {
+      let bb = new THREE.BoundingBoxHelper( this, 0xffaa00 );
+      bb.update();
+      window.flight.scene.add( bb );
+    }
   }
 
   /**
@@ -201,7 +209,7 @@ class TerrainPatch extends THREE.Mesh {
   }
 
   /**
-   * @description Gets an object space position on the landscape based on normalized XZ coordinates.
+   * @description Gets an object space position on the landscape based on world coordinates.
    * @returns {Vector3} The position.
    */
   getPosition( coord ) {
@@ -235,7 +243,18 @@ class TerrainPatch extends THREE.Mesh {
   }
 
   /**
-   * Gets the normal of the terrain at the given normalized XY coordinates.
+   * {bool} Does this terrain patch contains a given world position?
+   */
+  containsWorldPosition( coord ) {
+    let localCoord = {
+      x: ( coord.x - this.position.x ) / this.width,
+      y: ( coord.z - this.position.z ) / this.height
+    };
+    return x <= 1.0 && x >= 0 && y <= 1 && y >= 0;
+  };
+
+  /**
+   * Gets the normal of the terrain at the given world coordinates.
    * @return {Vector3} The normal.
    */
   getNormal( coord ) {
