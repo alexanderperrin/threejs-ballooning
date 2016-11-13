@@ -93,7 +93,7 @@ import $ from 'jquery';
 
   // Random object spawn chances
   const CHANCE_FOR_DOCK = 0.05;
-  const CHANCE_FOR_CHURCH = 0.5;
+  const CHANCE_FOR_CHURCH = 0.1;
 
   // Random generators
   let random = new Random( 'jfw3uhfoi44' );
@@ -287,7 +287,7 @@ import $ from 'jquery';
       if ( Math.abs( v.position.y - ( WATER_HEIGHT + 0.5 ) ) < 1.5 && v.normal.y > 0.7 ) {
         pierSpawnPoints.push( v );
       }
-      if ( v.position.y > WATER_HEIGHT && v.normal.y > 0.9 ) {
+      if ( v.position.y > WATER_HEIGHT && v.normal.y > 0.95 ) {
         buildingSpawnPoints.push( v );
       }
     } );
@@ -354,6 +354,7 @@ import $ from 'jquery';
       church.scale.multiplyScalar( 1.5 );
       church.position.y += 4;
       church.castShadow = true;
+      church.receiveShadow = true;
       church.rotation.y = rotation - Math.PI / 2;
       scene.add( church );
     }
