@@ -1,14 +1,13 @@
-require("./node_modules/three/src/loaders/ObjectLoader");
-require("./node_modules/three/examples/js/controls/OrbitControls");
-require("./lib/THREE.MeshLine");
+require("../node_modules/three/src/loaders/ObjectLoader");
+require("../node_modules/three/examples/js/controls/OrbitControls");
+require("../lib/THREE.MeshLine");
 
-import Detector from "./lib/Detector";
-import Player from "./include/classes/player";
-import TerrainPatch from "./include/classes/terrain-patch";
-import Heightmap from "./include/classes/heightmap";
-import Bird from "./include/classes/bird";
-import Mathf from "./include/classes/mathf";
-import Random from "./include/classes/random";
+import Detector from "../lib/Detector";
+import Player from "./classes/player";
+import TerrainPatch from "./classes/terrain-patch";
+import Heightmap from "./classes/heightmap";
+import Bird from "./classes/bird";
+import Random from "./classes/random";
 import $ from "jquery";
 
 (function() {
@@ -657,9 +656,9 @@ import $ from "jquery";
    */
   let initShaders = function() {
     standardShader = {
-      vertexShader: getShader(require("./include/shaders/standard_vert.glsl")),
+      vertexShader: getShader(require("./shaders/standard_vert.glsl")),
       fragmentShader: getShader(
-        require("./include/shaders/standard_frag.glsl"),
+        require("./shaders/standard_frag.glsl"),
       ),
     };
   };
@@ -709,9 +708,9 @@ import $ from "jquery";
       ]),
       shading: THREE.FlatShading,
       fog: true,
-      vertexShader: getShader(require("./include/shaders/landscape_vert.glsl")),
+      vertexShader: getShader(require("./shaders/landscape_vert.glsl")),
       fragmentShader: getShader(
-        require("./include/shaders/landscape_frag.glsl"),
+        require("./shaders/landscape_frag.glsl"),
       ),
     });
 

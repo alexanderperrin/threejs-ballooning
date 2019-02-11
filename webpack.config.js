@@ -1,38 +1,32 @@
-var path = require( 'path' );
-var webpack = require( 'webpack' );
+const path = require("path");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const CleanWebpackPlugin = require("clean-webpack-plugin");
 
 module.exports = {
-  entry: './app.js',
+  entry: {
+    app: "./src/index.js",
+  },
   output: {
-    filename: 'bundle.js'
+    filename: "[name].bundle.js",
+    path: path.resolve(__dirname, "dist"),
   },
   plugins: [
-    new webpack.ProvidePlugin( {
-      THREE: 'three'
-    } )
+    new CleanWebpackPlugin(["dist"]),
+    new HtmlWebpackPlugin({
+      template: "./static/index.html",
+      minify: true,
+    }),
   ],
   module: {
-    loaders: [
+    rules: [
       {
-        test: /\.js$/,
-        exclude: /node_modules/,
-        loader: 'babel-loader',
-        query: {
-          presets: [ 'es2015' ],
-          plugins: [ 'transform-class-properties' ]
-        }
+        test: /\.css$/,
+        use: ["style-loader", "css-loader"],
       },
       {
         test: /\.glsl$/,
-        loader: 'webpack-glsl'
+        use: ["webpack-glsl-loader"],
       },
-      {
-        test: /\.css$/,
-        loader: "style-loader!css-loader"
-      }
-    ]
+    ],
   },
-  resolve: {
-    extensions: [ '', '.js' ]
-  }
-}
+};
