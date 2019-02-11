@@ -4,14 +4,15 @@
   "description": "Experiment using Three.js",
   "main": "index.js",
   "scripts": {
-    "start": "webpack-dev-server --open --host 0.0.0.0",
-    "build": "webpack"
+    "start": "webpack-dev-server --open --config webpack.dev.js --host 0.0.0.0",
+    "build": "webpack --config webpack.prod.js"
   },
   "author": "Alexander Perrin",
   "license": "ISC",
   "devDependencies": {
     "babel-core": "^6.26.3",
     "babel-loader": "^6.4.1",
+    "babel-minify-webpack-plugin": "^0.3.1",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-react": "^6.24.1",
@@ -29,10 +30,12 @@
     "strip-loader": "^0.1.2",
     "style-loader": "^0.13.2",
     "three": "^0.78.0",
+    "uglifyjs-webpack-plugin": "^2.1.1",
     "underscore": "^1.9.1",
     "webpack": "^4.29.3",
     "webpack-dev-server": "^3.1.14",
-    "webpack-glsl-loader": "^1.0.1"
+    "webpack-glsl-loader": "^1.0.1",
+    "webpack-merge": "^4.2.1"
   },
   "dependencies": {}
 }
