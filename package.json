@@ -4,7 +4,7 @@
   "description": "Experiment using Three.js",
   "main": "index.js",
   "scripts": {
-    "dev": "webpack-dev-server --inline --host 0.0.0.0",
+    "start": "webpack-dev-server --open --host 0.0.0.0",
     "build": "webpack"
   },
   "author": "Alexander Perrin",

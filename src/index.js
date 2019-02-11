@@ -4,6 +4,7 @@ require("../lib/THREE.MeshLine");
 
 import Detector from "../lib/Detector";
 import Player from "./classes/player";
+import * as THREE from "three";
 import TerrainPatch from "./classes/terrain-patch";
 import Heightmap from "./classes/heightmap";
 import Bird from "./classes/bird";
@@ -657,9 +658,7 @@ import $ from "jquery";
   let initShaders = function() {
     standardShader = {
       vertexShader: getShader(require("./shaders/standard_vert.glsl")),
-      fragmentShader: getShader(
-        require("./shaders/standard_frag.glsl"),
-      ),
+      fragmentShader: getShader(require("./shaders/standard_frag.glsl")),
     };
   };
 
@@ -709,9 +708,7 @@ import $ from "jquery";
       shading: THREE.FlatShading,
       fog: true,
       vertexShader: getShader(require("./shaders/landscape_vert.glsl")),
-      fragmentShader: getShader(
-        require("./shaders/landscape_frag.glsl"),
-      ),
+      fragmentShader: getShader(require("./shaders/landscape_frag.glsl")),
     });
 
     // Terrain patches
