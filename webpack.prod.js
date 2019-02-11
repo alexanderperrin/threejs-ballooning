@@ -7,8 +7,6 @@ module.exports = merge(common, {
   mode: "production",
   plugins: [
     new MinifyPlugin(),
-    new CopyWebpackPlugin([
-      { from: "public", to: "dist", ignore: ["index.html"] },
-    ]),
+    new CopyWebpackPlugin([{ from: "public", ignore: ["index.html"] }]),
   ],
 });
