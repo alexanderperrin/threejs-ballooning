@@ -12,17 +12,6 @@ module.exports = {
     } )
   ],
   module: {
-    preLoaders: [
-      {
-        test: /\.js$/,
-        exclude: [
-          /node_modules/,
-          /vendor/,
-          /lib/
-        ],
-        loader: 'jshint-loader'
-      }
-    ],
     loaders: [
       {
         test: /\.js$/,

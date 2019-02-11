@@ -1,43 +1,42 @@
-require( './node_modules\/three\/src\/loaders\/ObjectLoader' );
-require( './node_modules\/three\/examples\/js\/controls\/OrbitControls' );
-require( './lib/THREE.MeshLine' );
+require("./node_modules/three/src/loaders/ObjectLoader");
+require("./node_modules/three/examples/js/controls/OrbitControls");
+require("./lib/THREE.MeshLine");
 
-import Detector from './lib/Detector'
-import Player from './include/classes/player';
-import TerrainPatch from './include/classes/terrain-patch';
-import Heightmap from './include/classes/heightmap';
-import Bird from './include/classes/bird';
-import Mathf from './include/classes/mathf';
-import Random from './include/classes/random';
-import $ from 'jquery';
+import Detector from "./lib/Detector";
+import Player from "./include/classes/player";
+import TerrainPatch from "./include/classes/terrain-patch";
+import Heightmap from "./include/classes/heightmap";
+import Bird from "./include/classes/bird";
+import Mathf from "./include/classes/mathf";
+import Random from "./include/classes/random";
+import $ from "jquery";
 
-( function () {
-
-  if ( "performance" in window == false ) {
+(function() {
+  if ("performance" in window == false) {
     window.performance = {};
   }
 
-  Date.now = ( Date.now || function () { // thanks IE8
-    return new Date().getTime();
-  } );
+  Date.now =
+    Date.now ||
+    function() {
+      // thanks IE8
+      return new Date().getTime();
+    };
 
-  if ( "now" in window.performance == false ) {
-
+  if ("now" in window.performance == false) {
     var nowOffset = Date.now();
 
-    if ( performance.timing && performance.timing.navigationStart ) {
-      nowOffset = performance.timing.navigationStart
+    if (performance.timing && performance.timing.navigationStart) {
+      nowOffset = performance.timing.navigationStart;
     }
 
     window.performance.now = function now() {
       return Date.now() - nowOffset;
-    }
+    };
   }
+})();
 
-} )();
-
-( function () {
-
+(function() {
   // Rendering
   const SHADOW_MAP_WIDTH = 1024;
   const SHADOW_MAP_HEIGHT = 1024;
@@ -45,15 +44,15 @@ import $ from 'jquery';
   const SHADOW_CAM_STEP = 16;
 
   // File
-  const IMAGE_PATH = 'static/images/';
-  const MESH_PATH = 'static/meshes/';
+  const IMAGE_PATH = "static/images/";
+  const MESH_PATH = "static/meshes/";
 
   let meshFiles = [
-    'tree.json',
-    'balloon.json',
-    'boat01.json',
-    'pier01.json',
-    'church01.json',
+    "tree.json",
+    "balloon.json",
+    "boat01.json",
+    "pier01.json",
+    "church01.json",
   ];
   let imageFiles = [];
 
@@ -66,9 +65,6 @@ import $ from 'jquery';
   // Birds
   const BIRD_COUNT = 40;
   const BIRD_SPAWN_DISTANCE = -200;
-  const BIRD_RESPAWN_DISTANCE = 512;
-  const BIRD_MAX_RESPAWN_TIME = 10;
-  let birdsVisible = false;
   let birds = [];
 
   // Lights, camera and helpers
@@ -96,8 +92,8 @@ import $ from 'jquery';
   const CHANCE_FOR_CHURCH = 0.1;
 
   // Random generators
-  let random = new Random( 'jfw3uhfoi44' );
-  let birdRandom = new Random( '9ehg0wj40jf' );
+  let random = new Random("jfw3uhfoi44");
+  let birdRandom = new Random("9ehg0wj40jf");
 
   // Debug rays
   let rays = [];
@@ -107,24 +103,24 @@ import $ from 'jquery';
   const TERRAIN_PATCH_HEIGHT = 64;
   const TERRAIN_PATCHES_X = 6;
   const TERRAIN_PATCHES_Z = 12;
-  const TERRAIN_OFFSET_X = ( -TERRAIN_PATCHES_X * 0.5 ) * TERRAIN_PATCH_WIDTH;
+  const TERRAIN_OFFSET_X = -TERRAIN_PATCHES_X * 0.5 * TERRAIN_PATCH_WIDTH;
   const TERRAIN_OFFSET_Z = -128;
   const TREES_PER_TERRAIN = 50;
   const WATER_HEIGHT = -15.0;
-  let heightmap = new Heightmap( {
+  let heightmap = new Heightmap({
     noiseOffset: {
       x: 0,
-      y: -TERRAIN_OFFSET_Z
+      y: -TERRAIN_OFFSET_Z,
     },
     height: 50,
-    scale: 100
-  } );
+    scale: 100,
+  });
   let terrainPatches = [];
   let waterPlane;
   // Used for tracking terrain regeneration requirement
   let terrainGridIndex = {
     x: 0,
-    y: 0
+    y: 0,
   };
 
   // Shaders
@@ -133,39 +129,39 @@ import $ from 'jquery';
   // Input
   let input = {
     x: 0,
-    y: 0
+    y: 0,
   };
 
   /**
    * @summary Window focus detection.
    * @description Stops the animation clock when window is inactive.
    */
-  ( function () {
+  (function() {
     var hidden = "hidden";
 
     // Standards:
-    if ( hidden in document )
-      document.addEventListener( "visibilitychange", onchange );
-    else if ( ( hidden = "mozHidden" ) in document )
-      document.addEventListener( "mozvisibilitychange", onchange );
-    else if ( ( hidden = "webkitHidden" ) in document )
-      document.addEventListener( "webkitvisibilitychange", onchange );
-    else if ( ( hidden = "msHidden" ) in document )
-      document.addEventListener( "msvisibilitychange", onchange );
+    if (hidden in document)
+      document.addEventListener("visibilitychange", onchange);
+    else if ((hidden = "mozHidden") in document)
+      document.addEventListener("mozvisibilitychange", onchange);
+    else if ((hidden = "webkitHidden") in document)
+      document.addEventListener("webkitvisibilitychange", onchange);
+    else if ((hidden = "msHidden") in document)
+      document.addEventListener("msvisibilitychange", onchange);
     // IE 9 and lower:
-    else if ( "onfocusin" in document )
+    else if ("onfocusin" in document)
       document.onfocusin = document.onfocusout = onchange;
     // All others:
     else
       window.onpageshow = window.onpagehide = window.onfocus = window.onblur = onchange;
 
-    function onchange( evt ) {
-      if ( document[ hidden ] ) {
-        if ( clock !== undefined ) {
+    function onchange(evt) {
+      if (document[hidden]) {
+        if (clock !== undefined) {
           clock.stop();
         }
       } else {
-        if ( clock !== undefined ) {
+        if (clock !== undefined) {
           clock.start();
         }
       }
@@ -177,28 +173,26 @@ import $ from 'jquery';
           pageshow: v,
           blur: h,
           focusout: h,
-          pagehide: h
+          pagehide: h,
         };
 
       evt = evt || window.event;
-      if ( evt.type in evtMap )
-        document.body.className = evtMap[ evt.type ];
-      else
-        document.body.className = this[ hidden ] ? "hidden" : "visible";
+      if (evt.type in evtMap) document.body.className = evtMap[evt.type];
+      else document.body.className = this[hidden] ? "hidden" : "visible";
     }
 
     // set the initial state (but only if browser supports the Page Visibility API)
-    if ( document[ hidden ] !== undefined )
-      onchange( {
-        type: document[ hidden ] ? "blur" : "focus"
-      } );
-  } )();
+    if (document[hidden] !== undefined)
+      onchange({
+        type: document[hidden] ? "blur" : "focus",
+      });
+  })();
 
   /**
    * Gets the device pixel ratio.
    * @return float the ratio
    */
-  let getDevicePixelRatio = function () {
+  let getDevicePixelRatio = function() {
     return window.devicePixelRatio || 1;
   };
 
@@ -208,18 +202,18 @@ import $ from 'jquery';
    * @param {string}   type     event type
    * @param {Function} callback event handler
    */
-  let addEvent = function ( object, type, callback ) {
-    if ( object === null || typeof ( object ) === 'undefined' ) return;
-    if ( object.addEventListener ) {
-      object.addEventListener( type, callback, false );
-    } else if ( object.attachEvent ) {
-      object.attachEvent( 'on' + type, callback );
+  let addEvent = function(object, type, callback) {
+    if (object === null || typeof object === "undefined") return;
+    if (object.addEventListener) {
+      object.addEventListener(type, callback, false);
+    } else if (object.attachEvent) {
+      object.attachEvent("on" + type, callback);
     } else {
-      object[ 'on' + type ] = callback;
+      object["on" + type] = callback;
     }
   };
 
-  let updateRenderCamera = function () {
+  let updateRenderCamera = function() {
     let width = window.innerWidth;
     let height = window.innerHeight;
     renderCamera.aspect = width / height;
@@ -231,18 +225,18 @@ import $ from 'jquery';
    * @param  double width
    * @param  double height
    */
-  let resize = function () {
+  let resize = function() {
     let width = window.innerWidth;
     let height = window.innerHeight;
     let devicePixelRatio = getDevicePixelRatio();
-    renderer.setSize( width * devicePixelRatio, height * devicePixelRatio );
+    renderer.setSize(width * devicePixelRatio, height * devicePixelRatio);
 
     // Update canvas
     let canvas = renderer.domElement;
     canvas.width = width * devicePixelRatio;
     canvas.height = height * devicePixelRatio;
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+    canvas.style.width = width + "px";
+    canvas.style.height = height + "px";
 
     updateRenderCamera();
   };
@@ -252,117 +246,136 @@ import $ from 'jquery';
    * @param  {[type]} x terrain units to shift in x
    * @param  {[type]} y terrain units to shift in y
    */
-  let shiftTerrain = function ( x, y ) {
+  let shiftTerrain = function(x, y) {
     // Shift forward
-    for ( let i = 0; i < y; ++i ) {
-      for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
-        let tp = terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ][ j ];
+    for (let i = 0; i < y; ++i) {
+      for (let j = 0; j < TERRAIN_PATCHES_X; ++j) {
+        let tp = terrainPatches[terrainGridIndex.y % TERRAIN_PATCHES_Z][j];
         tp.position.z += TERRAIN_PATCH_HEIGHT * TERRAIN_PATCHES_Z;
-        tp.rebuild( scene );
+        tp.rebuild(scene);
       }
     }
-    spawnObjectsForTerrainPatches( terrainPatches[ terrainGridIndex.y % TERRAIN_PATCHES_Z ] );
+    spawnObjectsForTerrainPatches(
+      terrainPatches[terrainGridIndex.y % TERRAIN_PATCHES_Z],
+    );
 
     terrainGridIndex.y += y;
     waterPlane.position.z += TERRAIN_PATCH_HEIGHT * y;
   };
 
-  let spawnObjectsForTerrainPatches = function ( terrainPatches ) {
-
+  let spawnObjectsForTerrainPatches = function(terrainPatches) {
     let data = [];
-    terrainPatches.forEach( v => {
-      data = data.concat( v.getNiceHeightmapData() );
-    } );
+    terrainPatches.forEach(v => {
+      data = data.concat(v.getNiceHeightmapData());
+    });
 
     let boatSpawnPoints = [];
     let pierSpawnPoints = [];
     let buildingSpawnPoints = [];
 
     // Iterate through heightmap to find appropriate places for spawning objects
-    data.forEach( v => {
+    data.forEach(v => {
       // Find suitable positions for spawning boats
-      if ( v.position.y <= DEPTH_FOR_BOAT && v.normal.y >= 0.99 ) {
-        boatSpawnPoints.push( v );
+      if (v.position.y <= DEPTH_FOR_BOAT && v.normal.y >= 0.99) {
+        boatSpawnPoints.push(v);
       }
-      if ( Math.abs( v.position.y - ( WATER_HEIGHT + 0.5 ) ) < 1.5 && v.normal.y > 0.7 ) {
-        pierSpawnPoints.push( v );
+      if (
+        Math.abs(v.position.y - (WATER_HEIGHT + 0.5)) < 1.5 &&
+        v.normal.y > 0.7
+      ) {
+        pierSpawnPoints.push(v);
       }
-      if ( v.position.y > WATER_HEIGHT && v.normal.y > 0.95 ) {
-        buildingSpawnPoints.push( v );
+      if (v.position.y > WATER_HEIGHT && v.normal.y > 0.95) {
+        buildingSpawnPoints.push(v);
       }
-    } );
+    });
 
-    if ( randomChance( CHANCE_FOR_DOCK ) ) {
+    if (randomChance(CHANCE_FOR_DOCK)) {
       // Boat spawning
-      if ( boatSpawnPoints.length > 0 ) {
+      if (boatSpawnPoints.length > 0) {
         // Spawn a patch of boats
-        let numBoats = Math.ceil( random.range( 1, 5 ) );
-        let point = boatSpawnPoints[ Math.floor( random.range( 0, boatSpawnPoints.length ) ) ];
-        for ( let i = 0; i < numBoats; ++i ) {
-          let angle = random.range( 0, Math.PI * 2 );
+        let numBoats = Math.ceil(random.range(1, 5));
+        let point =
+          boatSpawnPoints[Math.floor(random.range(0, boatSpawnPoints.length))];
+        for (let i = 0; i < numBoats; ++i) {
+          let angle = random.range(0, Math.PI * 2);
           let dist = i * 5;
-          let boat = meshes[ 'boat' ].clone();
+          let boat = meshes["boat"].clone();
           boat.castShadow = true;
-          let scale = random.range( 0.5, 0.75 );
-          boat.scale.set( scale, scale, scale );
-          boat.rotation.y = random.range( 0, Math.PI * 2 );
-          let xOffset = Math.cos( angle ) * dist;
-          let zOffset = Math.sin( angle ) * dist;
-          boat.position.set( point.position.x + xOffset, WATER_HEIGHT + 0.5 * scale, point.position.z + zOffset );
-          scene.add( boat );
+          let scale = random.range(0.5, 0.75);
+          boat.scale.set(scale, scale, scale);
+          boat.rotation.y = random.range(0, Math.PI * 2);
+          let xOffset = Math.cos(angle) * dist;
+          let zOffset = Math.sin(angle) * dist;
+          boat.position.set(
+            point.position.x + xOffset,
+            WATER_HEIGHT + 0.5 * scale,
+            point.position.z + zOffset,
+          );
+          scene.add(boat);
         }
       }
 
       // Pier spawning
-      let numPiers = Math.ceil( random.range( 1, 3 ) );
-      if ( pierSpawnPoints.length > 0 ) {
-        for ( let i = 0; i < numPiers; ++i ) {
-          let v = pierSpawnPoints[ Math.floor( random.range( 0, pierSpawnPoints.length ) ) ];
+      let numPiers = Math.ceil(random.range(1, 3));
+      if (pierSpawnPoints.length > 0) {
+        for (let i = 0; i < numPiers; ++i) {
+          let v =
+            pierSpawnPoints[
+              Math.floor(random.range(0, pierSpawnPoints.length))
+            ];
           // Check that there's enough room for the pier to be placed in the water
-          let offset = new THREE.Vector2( v.normal.x, v.normal.z ).normalize().multiplyScalar( 20 );
-          let pierPos = new THREE.Vector3( v.position.x + offset.x, WATER_HEIGHT, v.position.z + offset.y );
-          let depthPos = sampleLandscapePosition( pierPos );
-          if ( depthPos !== undefined ) {
-
-            if ( depthPos.y < DEPTH_FOR_BOAT * 0.75 ) {
+          let offset = new THREE.Vector2(v.normal.x, v.normal.z)
+            .normalize()
+            .multiplyScalar(20);
+          let pierPos = new THREE.Vector3(
+            v.position.x + offset.x,
+            WATER_HEIGHT,
+            v.position.z + offset.y,
+          );
+          let depthPos = sampleLandscapePosition(pierPos);
+          if (depthPos !== undefined) {
+            if (depthPos.y < DEPTH_FOR_BOAT * 0.75) {
               let pos = new THREE.Vector3();
-              pos.copy( v.position );
+              pos.copy(v.position);
               let waterDiff = pos.y - WATER_HEIGHT;
-              let dir = new THREE.Vector3( v.normal.x, 0, v.normal.z ).multiplyScalar( waterDiff / ( 1.0 - v.normal.y ) * 0.5 );
+              let dir = new THREE.Vector3(
+                v.normal.x,
+                0,
+                v.normal.z,
+              ).multiplyScalar((waterDiff / (1.0 - v.normal.y)) * 0.5);
               pos.y -= waterDiff;
-              pos.add( dir );
+              pos.add(dir);
 
-              let rotation = Math.atan2( v.normal.x, v.normal.z );
-              let pier = meshes[ 'pier' ].clone();
-              pier.scale.set( 1.5, 1.5, 1.5 );
-              pier.position.set( pos.x, WATER_HEIGHT + 1.5, pos.z );
+              let rotation = Math.atan2(v.normal.x, v.normal.z);
+              let pier = meshes["pier"].clone();
+              pier.scale.set(1.5, 1.5, 1.5);
+              pier.position.set(pos.x, WATER_HEIGHT + 1.5, pos.z);
               pier.castShadow = true;
               pier.rotation.z = rotation + Math.PI / 2;
-              scene.add( pier );
+              scene.add(pier);
             }
           }
         }
       }
     }
 
-    if ( randomChance( CHANCE_FOR_CHURCH ) ) {
-      let point = buildingSpawnPoints[ Math.floor( random.range( 0, buildingSpawnPoints.length ) ) ];
+    if (randomChance(CHANCE_FOR_CHURCH)) {
+      let point =
+        buildingSpawnPoints[
+          Math.floor(random.range(0, buildingSpawnPoints.length))
+        ];
       let pos = point.position;
-      let rotation = Math.atan2( point.normal.x, point.normal.z );
-      let church = meshes[ 'church' ].clone();
-      church.position.copy( pos );
-      church.scale.multiplyScalar( 1.5 );
+      let rotation = Math.atan2(point.normal.x, point.normal.z);
+      let church = meshes["church"].clone();
+      church.position.copy(pos);
+      church.scale.multiplyScalar(1.5);
       church.position.y += 4;
       church.castShadow = true;
       church.receiveShadow = true;
       church.rotation.y = rotation - Math.PI / 2;
-      scene.add( church );
+      scene.add(church);
     }
-
-    // Landscape objects
-    // if ( randomChance( CHANCE_FOR_CHURCH ) ) {
-    //   // let v = aboveWaterPoints[Math.floor(random.range(0, pierSpawnPoints))]
-    // }
   };
 
   /**
@@ -371,11 +384,11 @@ import $ from 'jquery';
    * @param  {int} y terrain index y
    * @return {vec3}   world position
    */
-  let terrainGridToWorld = function ( x, y ) {
+  let terrainGridToWorld = function(x, y) {
     return {
       x: x * TERRAIN_PATCH_WIDTH,
       y: 0,
-      z: y * TERRAIN_PATCH_HEIGHT
+      z: y * TERRAIN_PATCH_HEIGHT,
     };
   };
 
@@ -383,22 +396,22 @@ import $ from 'jquery';
    * Returns the terrain snapped position of the given world position.
    * Returns undefined if position is not over landscape.
    */
-  let sampleLandscapePosition = function ( worldPosition ) {
-    for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
-      for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
-        if ( terrainPatches[ i ][ j ].containsWorldPosition( worldPosition ) ) {
-          return terrainPatches[ i ][ j ].getPosition( worldPosition );
+  let sampleLandscapePosition = function(worldPosition) {
+    for (let i = 0; i < TERRAIN_PATCHES_Z; ++i) {
+      for (let j = 0; j < TERRAIN_PATCHES_X; ++j) {
+        if (terrainPatches[i][j].containsWorldPosition(worldPosition)) {
+          return terrainPatches[i][j].getPosition(worldPosition);
         }
       }
     }
     return undefined;
   };
 
-  let sampleLandscapeNormal = function ( worldPosition ) {
-    for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
-      for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
-        if ( terrainPatches[ i ][ j ].containsWorldPosition( worldPosition ) ) {
-          return terrainPatches[ i ][ j ].getNormal( worldPosition );
+  let sampleLandscapeNormal = function(worldPosition) {
+    for (let i = 0; i < TERRAIN_PATCHES_Z; ++i) {
+      for (let j = 0; j < TERRAIN_PATCHES_X; ++j) {
+        if (terrainPatches[i][j].containsWorldPosition(worldPosition)) {
+          return terrainPatches[i][j].getNormal(worldPosition);
         }
       }
     }
@@ -410,178 +423,211 @@ import $ from 'jquery';
    * @param  {vec3} pos world position
    * @return {vec2}     terrain index
    */
-  let worldToTerrainGrid = function ( pos ) {
+  let worldToTerrainGrid = function(pos) {
     return {
-      x: Math.round( pos.x / TERRAIN_PATCH_WIDTH ),
-      y: Math.round( pos.z / TERRAIN_PATCH_HEIGHT )
+      x: Math.round(pos.x / TERRAIN_PATCH_WIDTH),
+      y: Math.round(pos.z / TERRAIN_PATCH_HEIGHT),
     };
   };
 
   /// Gets a random position on the entire landscape
-  let getRandomPositionOnLandscape = function () {
+  let getRandomPositionOnLandscape = function() {
     return {
-      x: getRandomArbitrary( 0, TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) + TERRAIN_OFFSET_X,
+      x:
+        getRandomArbitrary(0, TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH) +
+        TERRAIN_OFFSET_X,
       y: 0,
-      z: getRandomArbitrary( 0, TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) + TERRAIN_OFFSET_Z
+      z:
+        getRandomArbitrary(0, TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT) +
+        TERRAIN_OFFSET_Z,
     };
   };
 
-  let randomChance = function ( chance ) {
-    return random.range( 0, 1 ) + chance > 1.0;
+  /**
+   * Coin flip random chance selector.
+   * @param {Number} chance the chance between 0 and 1.
+   * @return {Boolean} whether the random chance occurred.
+   */
+  let randomChance = function(chance) {
+    return random.range(0, 1) + chance > 1.0;
   };
 
-  let getLandscapeMidpoint = function () {
+  /**
+   * Get the x midpoint of the terrain.
+   * @return {Number} the x midpoint.
+   */
+  let getLandscapeMidpoint = function() {
     return {
-      x: ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2 + TERRAIN_OFFSET_X
-    }
+      x: (TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH) / 2 + TERRAIN_OFFSET_X,
+    };
   };
 
-  let getLandscapeWidth = function () {
+  /**
+   * Get the width of the terrain.
+   * @return {Number} the width.
+   */
+  let getLandscapeWidth = function() {
     return TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH;
   };
 
-  let getLandscapeDepth = function () {
+  /**
+   * Get the depth of the terrain.
+   * @return {Number} the depth.
+   */
+  let getLandscapeDepth = function() {
     return TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT;
   };
 
-  /// Redraw the view
-  let render = function () {
-    renderer.render( scene, renderCamera );
+  /**
+   * Render the scene.
+   */
+  let render = function() {
+    renderer.render(scene, renderCamera);
   };
 
   /**
    * Parses a shader from the THREE shader chunk library
-   * @param  {[type]} shaderStr [description]
-   * @return {[type]}           [description]
+   * @param  {String} shaderStr the raw GLSL shader string.
+   * @return {String} the parsed shader code.
    */
-  let getShader = function ( shaderStr ) {
-    return shaderStr.replace( /#include\s+(\S+)/gi, function ( match, p1 ) {
-      p1 = p1.substr( 1, p1.length - 2 );
-      var chunk = THREE.ShaderChunk[ p1 ];
+  let getShader = function(shaderStr) {
+    return shaderStr.replace(/#include\s+(\S+)/gi, function(match, p1) {
+      p1 = p1.substr(1, p1.length - 2);
+      var chunk = THREE.ShaderChunk[p1];
       return chunk ? chunk : "";
-    } );
-  };
-
-  let loadMeshes = function ( callback ) {
-
-    loadingMessage.html( 'geometry' );
-
-    let numFiles = meshFiles.length;
-    if ( numFiles === 0 ) {
-      callback();
-    }
-    meshFiles.forEach( v => {
-      objectLoader.load( MESH_PATH + v, ( obj ) => {
-        let name = obj.name;
-        meshes[ name ] = obj;
-        numFiles--;
-        if ( numFiles === 0 ) {
-          callback();
-        }
-      } );
-    } );
+    });
   };
 
   /**
-   * Loads the textures specified in the textures URL array.
+   * Load the meshes required for playing the application.
+   * @param {Function} callback the callback to execute when meshes are loaded.
    */
-  let loadTextures = function ( callback ) {
+  let loadMeshes = function(callback) {
+    loadingMessage.html("geometry");
 
-    loadingMessage.html( 'images' );
-
-    let numFiles = imageFiles.length;
-    if ( numFiles === 0 ) {
+    let numFiles = meshFiles.length;
+    if (numFiles === 0) {
       callback();
     }
-    imageFiles.forEach( v => {
+    meshFiles.forEach(v => {
+      objectLoader.load(MESH_PATH + v, obj => {
+        let name = obj.name;
+        meshes[name] = obj;
+        numFiles--;
+        if (numFiles === 0) {
+          callback();
+        }
+      });
+    });
+  };
+
+  /**
+   * Load the textures required to play the application.
+   */
+  let loadTextures = function(callback) {
+    loadingMessage.html("images");
+
+    let numFiles = imageFiles.length;
+    if (numFiles === 0) {
+      callback();
+    }
+    imageFiles.forEach(v => {
       let texture = new THREE.Texture();
       let image = new Image();
-      image.onload = function () {
+      image.onload = function() {
         texture.image = image;
         texture.needsUpdate = true;
         texture.name = v;
-        textures[ v ] = texture;
+        textures[v] = texture;
         numFiles--;
-        if ( numFiles === 0 ) {
+        if (numFiles === 0) {
           callback();
         }
       };
       image.src = IMAGE_PATH + v;
-    } );
+    });
   };
 
   /**
-   * Initialises the THREE WebGL renderer and appends to DOM.
-   * @return {[type]} [description]
+   * Initialise the THREE WebGL renderer and append to DOM.
    */
-  let initRenderer = function () {
-    renderer = new THREE.WebGLRenderer( {
-      antialias: false
-    } );
-    renderer.setClearColor( 'white', 1 );
+  let initRenderer = function() {
+    renderer = new THREE.WebGLRenderer({
+      antialias: false,
+    });
+    renderer.setClearColor("white", 1);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.autoUpdate = false;
     renderer.shadowMap.needsUpdate = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    document.getElementById( 'canvas-container' ).appendChild( renderer.domElement );
+    document
+      .getElementById("canvas-container")
+      .appendChild(renderer.domElement);
 
-    let mat = new THREE.ShaderMaterial( {
+    let mat = new THREE.ShaderMaterial({
       lights: true,
       uniforms: THREE.ShaderLib.phong.uniforms,
-      uniforms: THREE.UniformsUtils.merge( [
-        THREE.ShaderLib.phong.uniforms, {
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.ShaderLib.phong.uniforms,
+        {
           xFogColor: {
-            type: 'c',
-            value: new THREE.Color( 0xFFFFFF )
+            type: "c",
+            value: new THREE.Color(0xffffff),
           },
-        }
-      ] ),
+        },
+      ]),
       shading: THREE.FlatShading,
       fog: true,
       vertexShader: standardShader.vertexShader,
       fragmentShader: standardShader.fragmentShader,
-      vertexColors: THREE.VertexColors
-    } );
+      vertexColors: THREE.VertexColors,
+    });
 
     // Assign materials
-    Object.keys( meshes ).forEach( v => {
-      let m = meshes[ v ];
+    Object.keys(meshes).forEach(v => {
+      let m = meshes[v];
       m.material = mat;
-    } );
+    });
   };
 
   /**
-   * Initialises the base scene objects and helpers.
+   * Initialise the base scene objects and helpers.
    */
-  let initScene = function () {
-
+  let initScene = function() {
     scene = new THREE.Scene();
-
     lightShadowOffset = new THREE.Object3D();
 
-    // Used for storing sun camera and target
+    // Used for storing sun shadow camera and target
     lightAnchor = new THREE.Object3D();
-    scene.add( lightAnchor );
-    lightAnchor.add( lightShadowOffset );
+    scene.add(lightAnchor);
+    lightAnchor.add(lightShadowOffset);
 
     // Used for transforming light and shadow cameras
     let lightMatrix = new THREE.Matrix4();
     let rotation = new THREE.Quaternion();
-    rotation.setFromEuler( new THREE.Euler(
-      THREE.Math.degToRad( 35 ),
-      THREE.Math.degToRad( -135 ),
-      0, 'YXZ' ) );
-    lightMatrix.compose( new THREE.Vector3( 0, 128, 0 ), rotation, new THREE.Vector3( 1, 1, 1 ) );
+    rotation.setFromEuler(
+      new THREE.Euler(
+        THREE.Math.degToRad(35),
+        THREE.Math.degToRad(-135),
+        0,
+        "YXZ",
+      ),
+    );
+    lightMatrix.compose(
+      new THREE.Vector3(0, 128, 0),
+      rotation,
+      new THREE.Vector3(1, 1, 1),
+    );
 
     // Lights
-    sun = new THREE.DirectionalLight( 0xffffff, 1.5 );
-    sun.position.set( 0, 0, 0 );
-    sun.target.position.set( 0, 0, 128 );
-    scene.add( new THREE.AmbientLight( 0xeeeeFF, 0.5 ) );
-    scene.fog = new THREE.Fog( 0xdaf0fb, 350, 950 );
-    let hemiLight = new THREE.HemisphereLight( 0xFFFFFF, 0xFFED00, 0.25 );
-    hemiLight.position.set( 0, 500, 0 );
-    scene.add( hemiLight );
+    sun = new THREE.DirectionalLight(0xffffff, 1.5);
+    sun.position.set(0, 0, 0);
+    sun.target.position.set(0, 0, 128);
+    scene.add(new THREE.AmbientLight(0xeeeeff, 0.5));
+    scene.fog = new THREE.Fog(0xdaf0fb, 350, 950);
+    let hemiLight = new THREE.HemisphereLight(0xffffff, 0xffed00, 0.25);
+    hemiLight.position.set(0, 500, 0);
+    scene.add(hemiLight);
 
     // Shadows
     sun.castShadow = true;
@@ -597,197 +643,239 @@ import $ from 'jquery';
     sun.shadow.bias = -0.0025;
 
     // Shadow camera position texel snapping compensator
-    lightShadowOffset.add( sun );
-    lightShadowOffset.add( sun.target );
-    lightAnchor.applyMatrix( lightMatrix );
+    lightShadowOffset.add(sun);
+    lightShadowOffset.add(sun.target);
+    lightAnchor.applyMatrix(lightMatrix);
     lightPosIndex = lightAnchor.position.z;
     lightAnchor.position.z += 400;
 
     window.flight.scene = scene;
   };
 
-  let initShaders = function () {
+  /**
+   * Parse the glsl shaders.
+   */
+  let initShaders = function() {
     standardShader = {
-      vertexShader: getShader( require( './include/shaders/standard_vert.glsl' ) ),
-      fragmentShader: getShader( require( './include/shaders/standard_frag.glsl' ) )
-    }
+      vertexShader: getShader(require("./include/shaders/standard_vert.glsl")),
+      fragmentShader: getShader(
+        require("./include/shaders/standard_frag.glsl"),
+      ),
+    };
   };
 
-  let initTerrain = function () {
-
+  /**
+   * Initialise the terrain materials and geometry.
+   */
+  let initTerrain = function() {
     // Shader uniforms
     let uniforms = {
       cliffColor: {
-        type: 'c',
-        value: new THREE.Color( 0x555555 )
+        type: "c",
+        value: new THREE.Color(0x555555),
       },
       grassColor: {
-        type: 'c',
-        value: new THREE.Color( 0x475905 )
+        type: "c",
+        value: new THREE.Color(0x475905),
       },
       sandColor: {
-        type: 'c',
-        value: new THREE.Color( 0x886633 )
+        type: "c",
+        value: new THREE.Color(0x886633),
       },
       steps: {
-        type: 'f',
-        value: 1.0
+        type: "f",
+        value: 1.0,
       },
       waterHeight: {
-        type: 'f',
-        value: WATER_HEIGHT + 0.5
+        type: "f",
+        value: WATER_HEIGHT + 0.5,
       },
       xFogColor: {
-        type: 'c',
-        value: new THREE.Color( 0xFFFFFF )
+        type: "c",
+        value: new THREE.Color(0xffffff),
       },
       threshold: {
-        type: 'f',
-        value: 0.25
-      }
+        type: "f",
+        value: 0.25,
+      },
     };
 
     // Materials
-    let landscapeMaterial = new THREE.ShaderMaterial( {
+    let landscapeMaterial = new THREE.ShaderMaterial({
       lights: true,
-      uniforms: THREE.UniformsUtils.merge( [
+      uniforms: THREE.UniformsUtils.merge([
         THREE.ShaderLib.phong.uniforms,
-        uniforms
-      ] ),
+        uniforms,
+      ]),
       shading: THREE.FlatShading,
       fog: true,
-      vertexShader: getShader( require( './include/shaders/landscape_vert.glsl' ) ),
-      fragmentShader: getShader( require( './include/shaders/landscape_frag.glsl' ) )
-    } );
+      vertexShader: getShader(require("./include/shaders/landscape_vert.glsl")),
+      fragmentShader: getShader(
+        require("./include/shaders/landscape_frag.glsl"),
+      ),
+    });
 
     // Terrain patches
-    for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
-      terrainPatches[ i ] = [];
-      for ( let j = 0; j < TERRAIN_PATCHES_X; ++j ) {
-        let tp = new TerrainPatch( {
+    for (let i = 0; i < TERRAIN_PATCHES_Z; ++i) {
+      terrainPatches[i] = [];
+      for (let j = 0; j < TERRAIN_PATCHES_X; ++j) {
+        let tp = new TerrainPatch({
           width: TERRAIN_PATCH_WIDTH,
           height: TERRAIN_PATCH_HEIGHT,
           position: new THREE.Vector3(
             TERRAIN_PATCH_WIDTH * j + TERRAIN_OFFSET_X,
             0,
-            TERRAIN_PATCH_HEIGHT * i + TERRAIN_OFFSET_Z
+            TERRAIN_PATCH_HEIGHT * i + TERRAIN_OFFSET_Z,
           ),
           heightmap: heightmap,
           material: landscapeMaterial,
-          debug: false
-        } );
+          debug: false,
+        });
         tp.receiveShadow = true;
         tp.castShadow = true;
-        tp.addScatterObject( {
-          mesh: meshes[ 'tree' ],
+        tp.addScatterObject({
+          mesh: meshes["tree"],
           count: TREES_PER_TERRAIN,
           minSize: {
             x: 0.25,
             y: 0.4,
-            z: 0.25
+            z: 0.25,
           },
           maxSize: {
             x: 0.5,
             y: 0.5,
-            z: 0.5
+            z: 0.5,
           },
           lockXZScale: true,
           minHeight: -10,
           maxHeight: 100,
-          maxSlope: 0.6
-        } );
-        terrainPatches[ i ][ j ] = tp;
-        scene.add( terrainPatches[ i ][ j ] );
+          maxSlope: 0.6,
+        });
+        terrainPatches[i][j] = tp;
+        scene.add(terrainPatches[i][j]);
       }
     }
 
-    for ( let i = 0; i < TERRAIN_PATCHES_Z; ++i ) {
-      spawnObjectsForTerrainPatches( terrainPatches[ i ] );
+    for (let i = 0; i < TERRAIN_PATCHES_Z; ++i) {
+      spawnObjectsForTerrainPatches(terrainPatches[i]);
     }
 
     // River plane
-    let riverMaterial = new THREE.MeshPhongMaterial( {
-      color: 0x111111
-    } );
-    riverMaterial.emissive = new THREE.Color( 0x5C9FAB );
-    let riverMesh = new THREE.PlaneGeometry( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH,
+    let riverMaterial = new THREE.MeshPhongMaterial({
+      color: 0x111111,
+    });
+    riverMaterial.emissive = new THREE.Color(0x5c9fab);
+    let riverMesh = new THREE.PlaneGeometry(
+      TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH,
       TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT * 2,
-      1, 1 );
-    waterPlane = new THREE.Mesh( riverMesh, riverMaterial );
+      1,
+      1,
+    );
+    waterPlane = new THREE.Mesh(riverMesh, riverMaterial);
     waterPlane.receiveShadow = true;
     waterPlane.position.y = -15;
     waterPlane.rotation.x = -Math.PI / 2.0;
     waterPlane.position.z = -TERRAIN_OFFSET_X;
-    scene.add( waterPlane );
+    scene.add(waterPlane);
   };
 
-  let initPlayer = function () {
-    let obj = meshes[ 'balloon' ];
+  /**
+   * Create our balloon friend and add to scene.
+   */
+  let initPlayer = function() {
+    let obj = meshes["balloon"];
     player = new Player();
-    player.position.set( 0, 100, 0 );
-    player.add( obj );
-    scene.add( player );
+    player.position.set(0, 100, 0);
+    player.add(obj);
+    scene.add(player);
   };
 
-  let initCameras = function () {
+  /**
+   * Initialise camera systems.
+   */
+  let initCameras = function() {
     // Game camera
-    gameCamera = new THREE.PerspectiveCamera( 15.0, window.innerWidth / window.innerHeight, 100, 10000 );
+    gameCamera = new THREE.PerspectiveCamera(
+      15.0,
+      window.innerWidth / window.innerHeight,
+      100,
+      10000,
+    );
     cameraAnchor = new THREE.Object3D();
-    cameraAnchor.position.set( ( TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH ) / 2, 0, ( TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT ) / 2 );
+    cameraAnchor.position.set(
+      (TERRAIN_PATCHES_X * TERRAIN_PATCH_WIDTH) / 2,
+      0,
+      (TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT) / 2,
+    );
     cameraAnchor.updateMatrix();
-    cameraAnchor.add( gameCamera );
-    gameCamera.position.set( 100, 250, -300 );
-    gameCamera.lookAt( new THREE.Vector3( 0, 100, 0 ) );
-    scene.add( cameraAnchor );
+    cameraAnchor.add(gameCamera);
+    gameCamera.position.set(100, 250, -300);
+    gameCamera.lookAt(new THREE.Vector3(0, 100, 0));
+    scene.add(cameraAnchor);
 
     // Editor camera
     editorCamera = gameCamera.clone();
-    cameraControls = new THREE.OrbitControls( editorCamera, renderer.domElement );
-    cameraControls.target.set( 0, 0, TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT / 2 );
-    editorCamera.position.set( -250, 350, -250 );
+    cameraControls = new THREE.OrbitControls(editorCamera, renderer.domElement);
+    cameraControls.target.set(
+      0,
+      0,
+      (TERRAIN_PATCHES_Z * TERRAIN_PATCH_HEIGHT) / 2,
+    );
+    editorCamera.position.set(-250, 350, -250);
     cameraControls.update();
 
     renderCamera = gameCamera;
   };
 
-  let respawnBirds = function () {
+  /**
+   * Move the birds back to the start of their flight.
+   * This will be invoked every now and again to loop the bird flight.
+   */
+  let respawnBirds = function() {
     let spawnWidth = getLandscapeWidth() * 0.25;
-    let bunchFactor = birdRandom.range( 0.2, 1 );
+    let bunchFactor = birdRandom.range(0.2, 1);
     let flockPosition = new THREE.Vector3(
-      birdRandom.range( -spawnWidth, spawnWidth ),
-      birdRandom.range( 64, 128 ),
-      player.position.z + BIRD_SPAWN_DISTANCE
+      birdRandom.range(-spawnWidth, spawnWidth),
+      birdRandom.range(64, 128),
+      player.position.z + BIRD_SPAWN_DISTANCE,
     );
     let birdPos;
-    for ( let i = 0; i < BIRD_COUNT; ++i ) {
-      birdPos = flockPosition.clone().add(
-        new THREE.Vector3(
-          birdRandom.range( -32, 32 ) * bunchFactor,
-          birdRandom.range( -16, 16 ) * bunchFactor,
-          birdRandom.range( -48, 48 ) * bunchFactor
-        )
-      );
-      birds[ i ].position.copy( birdPos );
+    for (let i = 0; i < BIRD_COUNT; ++i) {
+      birdPos = flockPosition
+        .clone()
+        .add(
+          new THREE.Vector3(
+            birdRandom.range(-32, 32) * bunchFactor,
+            birdRandom.range(-16, 16) * bunchFactor,
+            birdRandom.range(-48, 48) * bunchFactor,
+          ),
+        );
+      birds[i].position.copy(birdPos);
     }
     // Loop this function every so often
-    setTimeout( respawnBirds, 30000 + birdRandom.range( 0, 20000 ) );
+    setTimeout(respawnBirds, 30000 + birdRandom.range(0, 20000));
   };
 
-  let initBirds = function () {
-    for ( let i = 0; i < BIRD_COUNT; ++i ) {
+  /**
+   * Hatch some new birds.
+   */
+  let initBirds = function() {
+    for (let i = 0; i < BIRD_COUNT; ++i) {
       let bird = new Bird();
-      scene.add( bird );
-      birds.push( bird );
+      scene.add(bird);
+      birds.push(bird);
     }
     respawnBirds();
   };
 
-  let init = function () {
-
-    loadingMessage.html( 'world' );
+  /**
+   * Initialise the core application.
+   */
+  let init = function() {
+    loadingMessage.html("world");
 
     window.flight = {};
-    clock = new THREE.Clock( true );
+    clock = new THREE.Clock(true);
     window.flight.clock = clock;
     window.flight.input = 0;
     window.flight.debug = {};
@@ -801,96 +889,100 @@ import $ from 'jquery';
     initBirds();
     initTerrain();
 
-    let a = new THREE.AxisHelper( 20 );
-    a.position.set( 0, 0, 0 );
-    scene.add( a );
+    let a = new THREE.AxisHelper(20);
+    a.position.set(0, 0, 0);
+    scene.add(a);
 
     // Events
-    addEvent( window, 'resize', resize );
+    addEvent(window, "resize", resize);
 
-    addEvent( window, 'keydown', function ( e ) {
+    addEvent(window, "keydown", function(e) {
       // Inputs
-      if ( e.keyCode === 39 ) {
+      if (e.keyCode === 39) {
         input.x = 1.0;
-      } else if ( e.keyCode === 37 ) {
+      } else if (e.keyCode === 37) {
         input.x = -1.0;
-      } else if ( e.keyCode === 32 ) {
+      } else if (e.keyCode === 32) {
         // Camera switching
-        if ( renderCamera === editorCamera ) {
+        if (renderCamera === editorCamera) {
           renderCamera = gameCamera;
         } else {
           renderCamera = editorCamera;
         }
       }
-    } );
+    });
 
-    window.addEventListener( 'touchmove', function ( e ) {
+    window.addEventListener("touchmove", function(e) {
       // Prevent scroll behaviour
-      if ( !event.target.classList.contains( 'scrollable' ) ) {
+      if (!event.target.classList.contains("scrollable")) {
         event.preventDefault();
       }
-    } );
+    });
 
-    window.addEventListener( 'mousewheel', function ( e ) {
+    window.addEventListener("mousewheel", function(e) {
       // Disable mouse wheel scrolling
       e.preventDefault();
-    } );
+    });
 
-    addEvent( window, 'touchstart', function ( e ) {
+    addEvent(window, "touchstart", function(e) {
       let mp = window.innerWidth / 2;
-      let p = e.touches[ 0 ].clientX;
-      if ( p - mp < 0 ) {
+      let p = e.touches[0].clientX;
+      if (p - mp < 0) {
         // Go left
         input.x = -1;
-      } else if ( p - mp > 0 ) {
+      } else if (p - mp > 0) {
         // Go right
         input.x = 1;
       }
-    } );
+    });
 
-    window.addEventListener( 'touchend', function () {
+    window.addEventListener("touchend", function() {
       input.x = 0;
-    } );
+    });
 
-    addEvent( window, 'keyup', function ( e ) {
+    addEvent(window, "keyup", function(e) {
       // Inputs
-      if ( e.keyCode === 39 ) {
+      if (e.keyCode === 39) {
         input.x = 0;
-      } else if ( e.keyCode === 37 ) {
+      } else if (e.keyCode === 37) {
         input.x = 0;
       }
-    } );
+    });
 
     resize();
+    idle();
 
-    $( '#loader' ).fadeOut( 'slow' );
-
-    idle()
+    // Silly hack to prevent the perf hiccup ruining the fade effect
+    setTimeout(() => {
+      $("#loader").fadeOut("slow");
+    }, 100);
   };
 
-  let drawRay = function ( position, direction, color, duration ) {
-    console.log( duration );
-    var material = new THREE.LineBasicMaterial( {
-      color: color
-    } );
+  /**
+   * Ray drawing util inspired by Unity's approach.
+   * Not performant at all, but very useful for quick draws.
+   */
+  let drawRay = function(position, direction, color, duration) {
+    var material = new THREE.LineBasicMaterial({
+      color: color,
+    });
 
     var geometry = new THREE.Geometry();
-    geometry.vertices.push(
-      new THREE.Vector3(),
-      direction.clone()
-    );
+    geometry.vertices.push(new THREE.Vector3(), direction.clone());
 
-    var line = new THREE.Line( geometry, material );
-    line.position.copy( position );
-    rays.push( {
+    var line = new THREE.Line(geometry, material);
+    line.position.copy(position);
+    rays.push({
       line: line,
-      killTime: window.flight.time + duration
-    } );
-    scene.add( line );
+      killTime: window.flight.time + duration,
+    });
+    scene.add(line);
   };
 
-  let idle = function () {
-
+  /**
+   * Idle/animate loop called every animation frame tick.
+   */
+  let idle = function() {
     let dt = clock.getDelta();
     window.flight.deltaTime = dt;
     window.flight.input = input;
@@ -898,77 +990,76 @@ import $ from 'jquery';
 
     // Update shadow camera position
     lightAnchor.position.z = player.position.z + 256;
-    if ( Math.round( lightAnchor.position.z ) - lightPosIndex > SHADOW_CAM_STEP ) {
-      lightPosIndex = Math.round( lightAnchor.position.z );
+    if (Math.round(lightAnchor.position.z) - lightPosIndex > SHADOW_CAM_STEP) {
+      lightPosIndex = Math.round(lightAnchor.position.z);
       lightAnchor.updateMatrixWorld();
       // Snap the shadow camera matrix to the nearest texel to prevent shadow swimming
-      let lPos = new THREE.Vector3( 0, 0, 0 ); // Real shadow cam position
-      let lPos2 = new THREE.Vector3( 0, 0, 0 ); // Texel snapped cam position
-      lightAnchor.worldToLocal( lPos );
-      lPos2.set( lPos.x, lPos.y, lPos.z );
+      let lPos = new THREE.Vector3(0, 0, 0); // Real shadow cam position
+      let lPos2 = new THREE.Vector3(0, 0, 0); // Texel snapped cam position
+      lightAnchor.worldToLocal(lPos);
+      lPos2.set(lPos.x, lPos.y, lPos.z);
       let tSize = SHADOW_CAM_SIZE / SHADOW_MAP_WIDTH;
-      lPos2.x = Math.round( lPos2.x / tSize ) * tSize;
-      lPos2.y = Math.round( lPos2.y / tSize ) * tSize;
-      lightShadowOffset.position.set( lPos.x - lPos2.x, lPos.y - lPos2.y, 0 );
+      lPos2.x = Math.round(lPos2.x / tSize) * tSize;
+      lPos2.y = Math.round(lPos2.y / tSize) * tSize;
+      lightShadowOffset.position.set(lPos.x - lPos2.x, lPos.y - lPos2.y, 0);
       renderer.shadowMap.needsUpdate = true;
     }
 
-    if ( player ) {
+    if (player) {
       player.update();
-      player.gridPos = worldToTerrainGrid( player.position );
+      player.gridPos = worldToTerrainGrid(player.position);
       // Check for terrain shift
-      while ( player.gridPos.y > terrainGridIndex.y ) {
-        shiftTerrain( 0, 1 );
+      while (player.gridPos.y > terrainGridIndex.y) {
+        shiftTerrain(0, 1);
       }
-      cameraAnchor.position.set( player.position.x, 0, player.position.z );
-      if ( cameraAnchor.position.x > 60 ) {
+      cameraAnchor.position.set(player.position.x, 0, player.position.z);
+      if (cameraAnchor.position.x > 60) {
         cameraAnchor.position.x = 60;
-      } else if ( cameraAnchor.position.x < -60 ) {
+      } else if (cameraAnchor.position.x < -60) {
         cameraAnchor.position.x = -60;
       }
     }
 
     // Animate birds
     let avBirdPos = new THREE.Vector3();
-    birds.forEach( b => {
-      avBirdPos.add( b.position );
-    } );
-    avBirdPos.divideScalar( birds.length );
+    birds.forEach(b => {
+      avBirdPos.add(b.position);
+    });
+    avBirdPos.divideScalar(birds.length);
     // Basic flocking
-    birds.forEach( b => {
-      b.update( dt, avBirdPos, player );
-    } );
+    birds.forEach(b => {
+      b.update(dt, avBirdPos, player);
+    });
 
-    requestAnimationFrame( idle );
+    requestAnimationFrame(idle);
     render();
 
     // Remove the rays
     let t = window.flight.time;
-    rays.forEach( r => {
-      if ( t > r.killTime ) {
-        scene.remove( r.line );
+    rays.forEach(r => {
+      if (t > r.killTime) {
+        scene.remove(r.line);
       }
-    } );
+    });
   };
 
-  $( document ).ready( function () {
+  $(document).ready(function() {
+    loadingMessage = $("#loading-message");
 
-    loadingMessage = $( '#loading-message' );
-
-    if ( !Detector.webgl || !Detector.canvas ) {
-      $( '.label' ).html( "My apologies, your device doesn't support WebGL, which is what this thing relies on! Try updating it, or try another one." );
+    if (!Detector.webgl || !Detector.canvas) {
+      $(".label").html(
+        "My apologies, your device doesn't support WebGL, which is what this thing relies on! Try updating it, or try another one.",
+      );
     } else {
-      loadingMessage.html( 'code' );
+      loadingMessage.html("code");
     }
 
-    loadTextures( () => {
-      loadMeshes( () => {
+    loadTextures(() => {
+      loadMeshes(() => {
         init();
-      } );
-    } );
-
-  } );
+      });
+    });
+  });
 
   _this = this;
-
-} )();
+})();

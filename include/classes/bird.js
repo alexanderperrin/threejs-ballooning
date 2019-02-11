@@ -1,5 +1,3 @@
-import Mathf from './mathf';
-
 const FLIGHT_SPEED = 30;
 const FLOCK_DIST = 16;
 const PLAYER_SEP_DIST = 80;

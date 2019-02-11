@@ -42890,7 +42890,6 @@
 	      });
 	      var mesh = new THREE.Mesh(line.geometry, material); // this syntax could definitely be improved!
 	      this.scarf = line;
-	      console.log(this.scarf);
 	      window.flight.scene.add(mesh);
 	    }
 	  }, {

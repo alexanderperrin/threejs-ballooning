@@ -43,7 +43,7 @@ void main() {
 	#include <clipping_planes_fragment>
 
 	float y = floor((vWorldNormal.y) * steps + threshold) / steps;
-	vec3 c = mix(sandColor, grassColor, clamp(floor(vWorldPos.y - waterHeight), 0.0, 1.0));
+	vec3 c = mix(sandColor, grassColor, clamp(floor(vWorldPos.y - waterHeight), 0.01, 0.99));
 	c = mix(cliffColor, c, y);
 	vec4 diffuseColor = vec4( c, opacity );
 	ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
