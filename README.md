@@ -8,11 +8,11 @@ Example at https://alexanderperrin.com.au/triangles/ballooning.
 Use the arrow keys or the left and right sides of the screen on touch devices to move the balloon.
 
 ## Features
-- Procedurally generated infinite terrain
+- Procedurally generated infinite terrain & tree placement
 - Happy flapping birds
-- Shore detection algorithms for boathouse placement
+- Shoreline boathouse placement
 - Pleasant mountain ballooning
-- Performant statically batched tree rendering
+- Statically batched tree rendering
 - Runs on desktop and mobile
 
 ## Development
