@@ -3,6 +3,10 @@ This was developed as a study into procedural terrains, buffer geometry optimisa
 I had some grand plans for the application, but they were never realised so it's probably more useful to just release it as it is for others to take a look!
 There are plenty of issues with it and it's pretty rough having been developed over 2 years ago now, but if it's some use to anyone that's great.
 
+Example at https://alexanderperrin.com.au/triangles/ballooning.
+
+Use the arrow keys or the left and right sides of the screen on touch devices to move the balloon.
+
 ## Features
 - Procedurally generated infinite terrain
 - Happy flapping birds
