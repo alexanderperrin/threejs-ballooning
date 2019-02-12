@@ -21,6 +21,7 @@ body {
     color: black;
     background-color: white;
     font-family: sans-serif;
+    overflow: hidden;
 }
 
 canvas {
