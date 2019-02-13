@@ -32,3 +32,5 @@ MIT
 
 ## Warranty
 None whatsoever.
+
+[![ko-fi](https://www.ko-fi.com/img/donate_sm.png)](https://ko-fi.com/G2G3QDVJ)
