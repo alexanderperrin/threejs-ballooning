@@ -8,6 +8,7 @@ Example at https://alexanderperrin.com.au/triangles/ballooning.
 Use the arrow keys or the left and right sides of the screen on touch devices to move the balloon.
 
 If you found this useful at all, you're by no means obliged but welcome to support my future works with a little donation.
+
 [![ko-fi](https://www.ko-fi.com/img/donate_sm.png)](https://ko-fi.com/G2G3QDVJ)
 
 ## Features
