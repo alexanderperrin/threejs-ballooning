@@ -20,6 +20,7 @@ Feel free to have a dig around in the code and change things. I've setup a [webp
 - Ensure that you have node and npm installed on your machine. You can follow the official instructions at https://www.npmjs.com/get-npm
 - Clone the repository into your desired project folder
 - Run `npm install` from within the project folder to install dependencies
+- Ensure webpack-cli is either available globally or installed locally (`npm install --save-dev webpack-cli`)
 - Run `npm start`. This will spin up a webpack development server running at http://localhost:8080
 - Change the code you like and see what happens!
 
